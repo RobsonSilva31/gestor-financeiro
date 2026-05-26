@@ -354,6 +354,13 @@ class MainWindow(QMainWindow):
             self.browser.page().runJavaScript(f"window.loadDataFromPython('{escaped_data}');")
 
 if __name__ == '__main__':
+    # Evita que o Windows agrupe o app com o ícone genérico do Python na barra de tarefas
+    import ctypes
+    try:
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("RobsonSilva31.FinanSof.1.0")
+    except Exception:
+        pass
+
     app = QApplication(sys.argv)
     window = MainWindow()
     window.showMaximized()
