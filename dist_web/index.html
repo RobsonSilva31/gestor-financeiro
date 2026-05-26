@@ -417,6 +417,42 @@
                     </div>
 
                     <div class="section-card mt-6">
+                        <h2 class="section-title"><i data-lucide="edit-3"></i> Personalizar Sugestões do Menu</h2>
+                        <p class="section-subtitle">Edite os termos sugeridos ao digitar nas tabelas. Separe as opções por vírgula.</p>
+                        
+                        <div class="settings-sync-panel mt-4">
+                            <div class="form-group">
+                                <label>Sugestões de Salários</label>
+                                <input type="text" id="suggest-salaries" class="form-control" onchange="updateCustomSuggestions('salaries', this.value)">
+                            </div>
+                            <div class="form-group mt-2">
+                                <label>Sugestões de Renda Extra</label>
+                                <input type="text" id="suggest-extraIncome" class="form-control" onchange="updateCustomSuggestions('extraIncome', this.value)">
+                            </div>
+                            <div class="form-group mt-2">
+                                <label>Sugestões de Renda Guardada (Reservas)</label>
+                                <input type="text" id="suggest-savedIncome" class="form-control" onchange="updateCustomSuggestions('savedIncome', this.value)">
+                            </div>
+                            <div class="form-group mt-2">
+                                <label>Sugestões de Gastos Fixos</label>
+                                <input type="text" id="suggest-fixedExpenses" class="form-control" onchange="updateCustomSuggestions('fixedExpenses', this.value)">
+                            </div>
+                            <div class="form-group mt-2">
+                                <label>Sugestões de Gastos Variáveis</label>
+                                <input type="text" id="suggest-variableExpenses" class="form-control" onchange="updateCustomSuggestions('variableExpenses', this.value)">
+                            </div>
+                            <div class="form-group mt-2">
+                                <label>Sugestões de Gastos Imprevistos</label>
+                                <input type="text" id="suggest-unexpectedExpenses" class="form-control" onchange="updateCustomSuggestions('unexpectedExpenses', this.value)">
+                            </div>
+                            <div class="form-group mt-2">
+                                <label>Sugestões de Investimentos</label>
+                                <input type="text" id="suggest-investments" class="form-control" onchange="updateCustomSuggestions('investments', this.value)">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-card mt-6">
                         <h2 class="section-title"><i data-lucide="git-pull-request"></i> Atualizações do Aplicativo</h2>
                         <p class="section-subtitle">Configure o repositório remoto para atualização automática do código (Auto-Updater).</p>
                         
@@ -440,7 +476,17 @@
         </main>
     </div>
 
+    <!-- Datalists para Menus Sugeridos -->
+    <datalist id="list-salaries"></datalist>
+    <datalist id="list-extraIncome"></datalist>
+    <datalist id="list-savedIncome"></datalist>
+    <datalist id="list-fixedExpenses"></datalist>
+    <datalist id="list-variableExpenses"></datalist>
+    <datalist id="list-unexpectedExpenses"></datalist>
+    <datalist id="list-investments"></datalist>
+
     <!-- Scripts de Lógica -->
+    <script src="lucide.min.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

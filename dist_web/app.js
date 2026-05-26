@@ -14,7 +14,16 @@ let state = {
     settings: {
         databasePath: "dados_financeiros.json",
         githubOwner: "RobsonSilva31",
-        githubRepo: "gestor-financeiro"
+        githubRepo: "gestor-financeiro",
+        suggestions: {
+            salaries: ["Salário Principal", "Salário Cônjuge", "Pró-labore"],
+            extraIncome: ["Freelance", "Venda de Produto", "Rendimento", "Reembolso"],
+            savedIncome: ["Reserva de Emergência", "Poupança de Emergência", "Caixa de Segurança"],
+            fixedExpenses: ["Aluguel / Financiamento", "Condomínio", "Energia Elétrica", "Água e Esgoto", "Internet e TV", "Plano de Saúde", "Escola / Faculdade"],
+            variableExpenses: ["Supermercado / Feira", "Combustível / Uber", "Restaurantes / Delivery", "Lazer / Cinema", "Roupas e Calçados", "Assinaturas (Netflix, Spotify)"],
+            unexpectedExpenses: ["Mecânico / Oficina", "Farmácia / Médico", "Conserto Doméstico", "Presentes", "Impostos Anuais (IPVA/IPTU)"],
+            investments: ["CDB 100% CDI", "Ações (B3)", "Fundos Imobiliários (FIIs)", "Tesouro Direto", "Poupança", "Criptomoedas"]
+        }
     }
 };
 
@@ -24,6 +33,10 @@ let chartExpensesInstance = null;
 
 // Inicialização do App
 document.addEventListener("DOMContentLoaded", () => {
+    // Inicializar com dados em branco / padrão se nada for carregado do Python
+    initDefaultData();
+    ensureDefaultSuggestions();
+    
     // Inicializar ícones do Lucide
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
@@ -35,8 +48,9 @@ document.addEventListener("DOMContentLoaded", () => {
     // Configurar Eventos de Configurações e Salvamento
     setupEventListeners();
     
-    // Inicializar com dados em branco / padrão se nada for carregado do Python
-    initDefaultData();
+    // Preencher datalists de sugestões e inputs na UI
+    populateDatalists();
+    fillSuggestionsInputs();
     
     // Renderizar Tabelas e Gráficos Inicialmente
     renderAllTables();
@@ -232,14 +246,17 @@ function renderTable(category) {
             <td>
                 <input type="text" class="table-input" 
                        value="${item.description}" 
+                       list="list-${category}"
                        placeholder="Descrição (ex: ${getPlaceholderText(category)})"
                        oninput="updateStateValue('${category}', '${item.id}', 'description', this.value)">
             </td>
             <td>
-                <input type="number" step="0.01" min="0" class="table-input" 
-                       value="${item.value || ''}" 
-                       placeholder="0,00"
-                       oninput="updateStateValue('${category}', '${item.id}', 'value', this.value)">
+                <input type="text" class="table-input" 
+                       value="${formatCurrency(item.value)}" 
+                       placeholder="R$ 0,00"
+                       style="text-align: right;"
+                       onfocus="onValueFocus(this, ${item.value})"
+                       onblur="onValueBlur(this, '${category}', '${item.id}')">
             </td>
             <td style="text-align: center;">
                 <button class="btn-delete" onclick="deleteRow('${category}', '${item.id}')" title="Excluir Lançamento">
@@ -250,12 +267,10 @@ function renderTable(category) {
         tbody.appendChild(tr);
     });
     
-    // Atualizar ícones recém-criados
+    // Recarregar os ícones recém-criados na tabela
     if (typeof lucide !== 'undefined') {
         lucide.createIcons({
-            attrs: {
-                class: 'lucide'
-            },
+            attrs: { class: 'lucide' },
             nameAttr: 'data-lucide',
             nodeList: tbody.querySelectorAll('[data-lucide]')
         });
@@ -353,7 +368,7 @@ function recalculateAll(shouldAutoSave = true) {
 
 // Formatação BRL
 function formatCurrency(val) {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val).replace(/\s/g, ' ');
 }
 
 // Debounce para salvamento
@@ -750,6 +765,11 @@ window.loadDataFromPython = function(jsonDataString) {
             state.settings = { ...state.settings, ...parsed.settings };
         }
         
+        // Assegurar e carregar sugestões salvas ou padrão
+        ensureDefaultSuggestions();
+        populateDatalists();
+        fillSuggestionsInputs();
+        
         // Atualizar campos de configurações visualmente
         const inputPath = document.getElementById("input-database-path");
         if (inputPath) inputPath.value = state.settings.databasePath;
@@ -867,16 +887,87 @@ function showNotification(title, message, type = "success") {
     }, 3500);
 }
 
-// Injeta estilos CSS para a animação das notificações de forma dinâmica
-const animStyle = document.createElement("style");
-animStyle.innerHTML = `
-@keyframes slideIn {
-    from { transform: translateX(110%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
-}
-@keyframes fadeOut {
-    from { transform: translateX(0); opacity: 1; }
-    to { transform: translateX(110%); opacity: 0; }
-}
-`;
 document.head.appendChild(animStyle);
+
+// --------------------------------------------------------------------------
+// SUGESTÕES DE AUTOCOMPLETE E FORMATAÇÃO DE ENTRADA
+// --------------------------------------------------------------------------
+
+// Garante que a estrutura padrão de sugestões exista nas configurações
+function ensureDefaultSuggestions() {
+    if (!state.settings) {
+        state.settings = {};
+    }
+    if (!state.settings.suggestions) {
+        state.settings.suggestions = {
+            salaries: ["Salário Principal", "Salário Cônjuge", "Pró-labore"],
+            extraIncome: ["Freelance", "Venda de Produto", "Rendimento", "Reembolso"],
+            savedIncome: ["Reserva de Emergência", "Poupança de Emergência", "Caixa de Segurança"],
+            fixedExpenses: ["Aluguel / Financiamento", "Condomínio", "Energia Elétrica", "Água e Esgoto", "Internet e TV", "Plano de Saúde", "Escola / Faculdade"],
+            variableExpenses: ["Supermercado / Feira", "Combustível / Uber", "Restaurantes / Delivery", "Lazer / Cinema", "Roupas e Calçados", "Assinaturas (Netflix, Spotify)"],
+            unexpectedExpenses: ["Mecânico / Oficina", "Farmácia / Médico", "Conserto Doméstico", "Presentes", "Impostos Anuais (IPVA/IPTU)"],
+            investments: ["CDB 100% CDI", "Ações (B3)", "Fundos Imobiliários (FIIs)", "Tesouro Direto", "Poupança", "Criptomoedas"]
+        };
+    }
+}
+
+// Preenche os datalists HTML com as sugestões salvas nas configurações
+function populateDatalists() {
+    const categories = ['salaries', 'extraIncome', 'savedIncome', 'fixedExpenses', 'variableExpenses', 'unexpectedExpenses', 'investments'];
+    categories.forEach(category => {
+        const datalist = document.getElementById(`list-${category}`);
+        if (datalist) {
+            datalist.innerHTML = "";
+            const items = state.settings.suggestions[category] || [];
+            items.forEach(val => {
+                const option = document.createElement("option");
+                option.value = val;
+                datalist.appendChild(option);
+            });
+        }
+    });
+}
+
+// Preenche os campos de texto das configurações com os CSVs das sugestões
+function fillSuggestionsInputs() {
+    const categories = ['salaries', 'extraIncome', 'savedIncome', 'fixedExpenses', 'variableExpenses', 'unexpectedExpenses', 'investments'];
+    categories.forEach(category => {
+        const input = document.getElementById(`suggest-${category}`);
+        if (input && state.settings.suggestions[category]) {
+            input.value = state.settings.suggestions[category].join(', ');
+        }
+    });
+}
+
+// Manipulador acionado quando as sugestões são editadas pelo usuário na aba de configurações
+window.updateCustomSuggestions = function(category, csvValue) {
+    const list = csvValue.split(',')
+                          .map(x => x.trim())
+                          .filter(x => x !== "");
+    
+    state.settings.suggestions[category] = list;
+    populateDatalists();
+    triggerSaveToPython();
+    showNotification("Sugestões Salvas", `Menu de sugestões atualizado!`, "success");
+};
+
+// Funções para controle de Input com Máscara Monetária R$ no Foco e Desfoco
+window.onValueFocus = function(input, rawValue) {
+    input.type = "number";
+    input.step = "0.01";
+    input.value = rawValue === 0 ? "" : rawValue;
+    input.select(); // auto-seleciona para facilitar reescrita
+};
+
+window.onValueBlur = function(input, category, id) {
+    const rawVal = parseFloat(input.value) || 0;
+    input.type = "text";
+    input.value = formatCurrency(rawVal);
+    
+    // Atualiza no estado
+    const item = state[category].find(x => x.id === id);
+    if (item) {
+        item.value = rawVal;
+        recalculateAll(true);
+    }
+};
