@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinanSof - Gestor Financeiro Pessoal</title>
+    <!-- Google Fonts: Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- CSS Local -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar lateral -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-icon">
+                    <i data-lucide="wallet-cards"></i>
+                </div>
+                <span class="logo-text">FinanSof</span>
+            </div>
+            
+            <nav class="sidebar-menu">
+                <button class="menu-item active" data-tab="dashboard">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button class="menu-item" data-tab="incomes">
+                    <i data-lucide="trending-up"></i>
+                    <span>Receitas / Rendas</span>
+                </button>
+                <button class="menu-item" data-tab="expenses">
+                    <i data-lucide="trending-down"></i>
+                    <span>Despesas / Gastos</span>
+                </button>
+                <button class="menu-item" data-tab="investments">
+                    <i data-lucide="piggy-bank"></i>
+                    <span>Investimentos</span>
+                </button>
+                <button class="menu-item" data-tab="insights">
+                    <i data-lucide="lightbulb"></i>
+                    <span>Dicas & Insights</span>
+                </button>
+                <button class="menu-item" data-tab="settings">
+                    <i data-lucide="settings"></i>
+                    <span>Configurações</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="sync-status">
+                    <i data-lucide="cloud-check" id="sync-icon"></i>
+                    <span id="sync-label">Dados Locais</span>
+                </div>
+                <div class="app-version">v1.0.0</div>
+            </div>
+        </aside>
+
+        <!-- Conteúdo Principal -->
+        <main class="main-content">
+            <!-- Header superior -->
+            <header class="main-header">
+                <div class="header-title">
+                    <h1 id="page-title">Dashboard Financeiro</h1>
+                    <p id="page-subtitle" class="text-muted">Visão geral do seu patrimônio e fluxo de caixa.</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-primary" id="btn-save-now">
+                        <i data-lucide="save"></i>
+                        <span>Salvar Alterações</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Seções / Abas -->
+            <div class="content-body">
+                
+                <!-- 1. ABA DASHBOARD -->
+                <section id="tab-dashboard" class="tab-content active">
+                    <!-- Cards Resumo -->
+                    <div class="metrics-grid">
+                        <div class="metric-card income">
+                            <div class="metric-header">
+                                <span>Receita Total</span>
+                                <div class="icon-wrapper"><i data-lucide="arrow-up-right"></i></div>
+                            </div>
+                            <div class="metric-value" id="dash-total-income">R$ 0,00</div>
+                            <div class="metric-footer">
+                                <span class="text-success" id="dash-salary-count">0 salários cadastrados</span>
+                            </div>
+                        </div>
+
+                        <div class="metric-card expense">
+                            <div class="metric-header">
+                                <span>Despesas Totais</span>
+                                <div class="icon-wrapper"><i data-lucide="arrow-down-left"></i></div>
+                            </div>
+                            <div class="metric-value" id="dash-total-expenses">R$ 0,00</div>
+                            <div class="metric-footer">
+                                <span class="text-danger" id="dash-expense-ratio">0% da renda</span>
+                            </div>
+                        </div>
+
+                        <div class="metric-card liquid">
+                            <div class="metric-header">
+                                <span>Saldo Líquido</span>
+                                <div class="icon-wrapper"><i data-lucide="scale"></i></div>
+                            </div>
+                            <div class="metric-value" id="dash-net-total">R$ 0,00</div>
+                            <div class="metric-footer">
+                                <span id="dash-net-status">Balanço neutro</span>
+                            </div>
+                        </div>
+
+                        <div class="metric-card investment">
+                            <div class="metric-header">
+                                <span>Total Investido</span>
+                                <div class="icon-wrapper"><i data-lucide="trending-up"></i></div>
+                            </div>
+                            <div class="metric-value" id="dash-total-invested">R$ 0,00</div>
+                            <div class="metric-footer">
+                                <span class="text-info" id="dash-invest-ratio">0% da renda</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gráficos e Alertas -->
+                    <div class="dashboard-grid">
+                        <!-- Card do Gráfico de Distribuição -->
+                        <div class="dashboard-card chart-card">
+                            <h3 class="card-title">Distribuição de Recursos</h3>
+                            <div class="chart-container">
+                                <canvas id="chartDistribution"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Card do Gráfico de Categorias de Gastos -->
+                        <div class="dashboard-card chart-card">
+                            <h3 class="card-title">Categorias de Despesas</h3>
+                            <div class="chart-container">
+                                <canvas id="chartExpenses"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Card de Alertas Rápidos -->
+                        <div class="dashboard-card alerts-card">
+                            <h3 class="card-title">Alertas e Alocação</h3>
+                            <div class="alerts-list" id="dash-quick-alerts">
+                                <!-- Preenchido via JS -->
+                                <div class="alert-empty-state">
+                                    <i data-lucide="check-circle-2"></i>
+                                    <p>Tudo sob controle! Nenhum alerta financeiro pendente.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. ABA RECEITAS / RENDAS -->
+                <section id="tab-incomes" class="tab-content">
+                    <div class="section-card">
+                        <div class="card-header-actions">
+                            <h2 class="section-title"><i data-lucide="banknote"></i> Salários Mensais</h2>
+                            <button class="btn btn-secondary btn-sm" onclick="addEntryRow('salaries')">
+                                <i data-lucide="plus"></i> Adicionar Salário
+                            </button>
+                        </div>
+                        <p class="section-subtitle">Lance aqui todos os salários fixos recebidos na casa (ex: Salário Próprio, Cônjuge, etc).</p>
+                        <div class="table-container">
+                            <table class="finance-table" id="table-salaries">
+                                <thead>
+                                    <tr>
+                                        <th>Descrição do Salário</th>
+                                        <th style="width: 250px;">Valor (R$)</th>
+                                        <th style="width: 80px; text-align: center;">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Dinâmico -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="section-card mt-6">
+                        <div class="card-header-actions">
+                            <h2 class="section-title"><i data-lucide="sparkles"></i> Renda Extra</h2>
+                            <button class="btn btn-secondary btn-sm" onclick="addEntryRow('extraIncome')">
+                                <i data-lucide="plus"></i> Adicionar Renda Extra
+                            </button>
+                        </div>
+                        <p class="section-subtitle">Ganhos esporádicos ou secundários (ex: Freelance, vendas, bônus).</p>
+                        <div class="table-container">
+                            <table class="finance-table" id="table-extraIncome">
+                                <thead>
+                                    <tr>
+                                        <th>Descrição</th>
+                                        <th style="width: 250px;">Valor (R$)</th>
+                                        <th style="width: 80px; text-align: center;">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Dinâmico -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="section-card mt-6">
+                        <div class="card-header-actions">
+                            <h2 class="section-title"><i data-lucide="lock"></i> Renda Guardada (Reserva / Emergência)</h2>
+                            <button class="btn btn-secondary btn-sm" onclick="addEntryRow('savedIncome')">
+                                <i data-lucide="plus"></i> Adicionar Reserva
+                            </button>
+                        </div>
+                        <p class="section-subtitle">Valores acumulados anteriormente ou que estão guardados em caixa para uso pontual.</p>
+                        <div class="table-container">
+                            <table class="finance-table" id="table-savedIncome">
+                                <thead>
+                                    <tr>
+                                        <th>Origem / Destinação</th>
+                                        <th style="width: 250px;">Valor (R$)</th>
+                                        <th style="width: 80px; text-align: center;">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Dinâmico -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. ABA DESPESAS / GASTOS -->
+                <section id="tab-expenses" class="tab-content">
+                    <div class="section-card">
+                        <div class="card-header-actions">
+                            <h2 class="section-title"><i data-lucide="home"></i> Gastos Fixos</h2>
+                            <button class="btn btn-secondary btn-sm" onclick="addEntryRow('fixedExpenses')">
+                                <i data-lucide="plus"></i> Adicionar Gasto Fixo
+                            </button>
+                        </div>
+                        <p class="section-subtitle">Despesas essenciais recorrentes que ocorrem todo mês (ex: Aluguel, Condomínio, Energia, Internet, Escola).</p>
+                        <div class="table-container">
+                            <table class="finance-table" id="table-fixedExpenses">
+                                <thead>
+                                    <tr>
+                                        <th>Descrição da Despesa</th>
+                                        <th style="width: 250px;">Valor (R$)</th>
+                                        <th style="width: 80px; text-align: center;">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Dinâmico -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="section-card mt-6">
+                        <div class="card-header-actions">
+                            <h2 class="section-title"><i data-lucide="shopping-cart"></i> Gastos Variáveis</h2>
+                            <button class="btn btn-secondary btn-sm" onclick="addEntryRow('variableExpenses')">
+                                <i data-lucide="plus"></i> Adicionar Gasto Variável
+                            </button>
+                        </div>
+                        <p class="section-subtitle">Despesas do dia a dia cujo valor varia ou que podem ser cortadas se necessário (ex: Supermercado, Lazer, Uber, Delivery).</p>
+                        <div class="table-container">
+                            <table class="finance-table" id="table-variableExpenses">
+                                <thead>
+                                    <tr>
+                                        <th>Descrição</th>
+                                        <th style="width: 250px;">Valor (R$)</th>
+                                        <th style="width: 80px; text-align: center;">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Dinâmico -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="section-card mt-6">
+                        <div class="card-header-actions">
+                            <h2 class="section-title"><i data-lucide="alert-triangle"></i> Gastos Imprevistos / Previstos Pontuais</h2>
+                            <button class="btn btn-secondary btn-sm" onclick="addEntryRow('unexpectedExpenses')">
+                                <i data-lucide="plus"></i> Adicionar Imprevisto
+                            </button>
+                        </div>
+                        <p class="section-subtitle">Gastos que fogem da rotina ou acontecem pontualmente (ex: Mecânico, IPVA anual, Consultas médicas, presentes).</p>
+                        <div class="table-container">
+                            <table class="finance-table" id="table-unexpectedExpenses">
+                                <thead>
+                                    <tr>
+                                        <th>Descrição</th>
+                                        <th style="width: 250px;">Valor (R$)</th>
+                                        <th style="width: 80px; text-align: center;">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Dinâmico -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. ABA INVESTIMENTOS -->
+                <section id="tab-investments" class="tab-content">
+                    <div class="section-card">
+                        <div class="card-header-actions">
+                            <h2 class="section-title"><i data-lucide="line-chart"></i> Lançamento de Investimentos</h2>
+                            <button class="btn btn-secondary btn-sm" onclick="addEntryRow('investments')">
+                                <i data-lucide="plus"></i> Adicionar Investimento
+                            </button>
+                        </div>
+                        <p class="section-subtitle">Aportes realizados no mês atual para construção de patrimônio (ex: Ações, Tesouro Direto, CDB, Poupança, Criptomoedas).</p>
+                        <div class="table-container">
+                            <table class="finance-table" id="table-investments">
+                                <thead>
+                                    <tr>
+                                        <th>Ativo / Corretora</th>
+                                        <th style="width: 250px;">Valor Aplicado (R$)</th>
+                                        <th style="width: 80px; text-align: center;">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Dinâmico -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 5. ABA DICAS E INSIGHTS -->
+                <section id="tab-insights" class="tab-content">
+                    <!-- Painel de Regra 50/30/20 -->
+                    <div class="section-card">
+                        <h2 class="section-title"><i data-lucide="pie-chart"></i> Regra de Alocação Recomendada (50/30/20)</h2>
+                        <p class="section-subtitle">Uma divisão saudável para a sua receita líquida recomendada por especialistas:</p>
+                        
+                        <div class="budget-rule-container">
+                            <div class="rule-bar-wrapper">
+                                <div class="rule-bar-progress" id="rule-progress-bar">
+                                    <div class="progress-segment needs" style="width: 50%;">Necessidades (50%)</div>
+                                    <div class="progress-segment wants" style="width: 30%;">Desejos (30%)</div>
+                                    <div class="progress-segment savings" style="width: 20%;">Futuro/Invest. (20%)</div>
+                                </div>
+                            </div>
+                            <div class="rule-comparison-grid mt-4">
+                                <div class="rule-comparison-card">
+                                    <div class="card-dot needs"></div>
+                                    <div class="comparison-info">
+                                        <h4>Gastos Fixos (Necessidades)</h4>
+                                        <p>Meta: máx 50% | Atual: <strong id="rule-fixed-pct">0%</strong></p>
+                                        <span id="rule-fixed-feedback" class="feedback-badge">Calculando...</span>
+                                    </div>
+                                </div>
+                                <div class="rule-comparison-card">
+                                    <div class="card-dot wants"></div>
+                                    <div class="comparison-info">
+                                        <h4>Gastos Variáveis & Imprevistos (Desejos)</h4>
+                                        <p>Meta: máx 30% | Atual: <strong id="rule-var-pct">0%</strong></p>
+                                        <span id="rule-var-feedback" class="feedback-badge">Calculando...</span>
+                                    </div>
+                                </div>
+                                <div class="rule-comparison-card">
+                                    <div class="card-dot savings"></div>
+                                    <div class="comparison-info">
+                                        <h4>Investimentos & Renda Guardada (Futuro)</h4>
+                                        <p>Meta: mín 20% | Atual: <strong id="rule-inv-pct">0%</strong></p>
+                                        <span id="rule-inv-feedback" class="feedback-badge">Calculando...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lista Completa de Dicas Financeiras -->
+                    <div class="section-card mt-6">
+                        <h2 class="section-title"><i data-lucide="help-circle"></i> Diagnóstico Customizado</h2>
+                        <p class="section-subtitle">Dicas geradas automaticamente com base no comportamento dos seus lançamentos de receitas e despesas.</p>
+                        
+                        <div class="tips-container" id="tips-detailed-list">
+                            <!-- Injetado via JS -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 6. ABA CONFIGURAÇÕES -->
+                <section id="tab-settings" class="tab-content">
+                    <div class="section-card">
+                        <h2 class="section-title"><i data-lucide="folder-sync"></i> Sincronização de Banco de Dados</h2>
+                        <p class="section-subtitle">Sincronize as atualizações feitas neste PC com outros computadores apontando o arquivo para uma pasta na nuvem (OneDrive, Dropbox, Google Drive).</p>
+                        
+                        <div class="settings-sync-panel mt-4">
+                            <div class="form-group">
+                                <label for="input-database-path">Caminho Atual do Arquivo de Dados (.json)</label>
+                                <div class="input-group-btn">
+                                    <input type="text" id="input-database-path" readonly class="form-control" style="background: rgba(255,255,255,0.05); color: #ccc;">
+                                    <button class="btn btn-secondary" id="btn-change-database-path">
+                                        <i data-lucide="folder-open"></i> Alterar Caminho
+                                    </button>
+                                </div>
+                                <small class="form-text text-muted">Para compartilhar com outro PC, salve o arquivo em uma pasta sincronizada do OneDrive/Google Drive e aponte o app do outro PC para o mesmo arquivo.</small>
+                            </div>
+                            
+                            <div class="sync-actions mt-4">
+                                <button class="btn btn-secondary" id="btn-reset-default-path">
+                                    <i data-lucide="rotate-ccw"></i> Restaurar Caminho Padrão
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-card mt-6">
+                        <h2 class="section-title"><i data-lucide="git-pull-request"></i> Atualizações do Aplicativo</h2>
+                        <p class="section-subtitle">Configure o repositório remoto para atualização automática do código (Auto-Updater).</p>
+                        
+                        <div class="settings-sync-panel mt-4">
+                            <div class="grid-2col">
+                                <div class="form-group">
+                                    <label>Usuário GitHub (Proprietário)</label>
+                                    <input type="text" id="github-owner" value="RobsonSilva31" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label>Repositório GitHub</label>
+                                    <input type="text" id="github-repo" value="gestor-financeiro" class="form-control">
+                                </div>
+                            </div>
+                            <small class="form-text text-muted mt-2">Se você fizer modificações no código, compilar e subir para este repositório, outros computadores com este mesmo app atualizarão seus componentes automaticamente ao abrir.</small>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts de Lógica -->
+    <script src="app.js"></script>
+</body>
+</html>
