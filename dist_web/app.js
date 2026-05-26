@@ -255,8 +255,8 @@ function renderTable(category) {
                        value="${formatCurrency(item.value)}" 
                        placeholder="R$ 0,00"
                        style="text-align: right;"
-                       onfocus="onValueFocus(this, ${item.value})"
-                       onblur="onValueBlur(this, '${category}', '${item.id}')">
+                       onfocus="onValueFocus(this)"
+                       oninput="maskBRL(this, '${category}', '${item.id}')">
             </td>
             <td style="text-align: center;">
                 <button class="btn-delete" onclick="deleteRow('${category}', '${item.id}')" title="Excluir Lançamento">
@@ -951,23 +951,29 @@ window.updateCustomSuggestions = function(category, csvValue) {
     showNotification("Sugestões Salvas", `Menu de sugestões atualizado!`, "success");
 };
 
-// Funções para controle de Input com Máscara Monetária R$ no Foco e Desfoco
-window.onValueFocus = function(input, rawValue) {
-    input.type = "number";
-    input.step = "0.01";
-    input.value = rawValue === 0 ? "" : rawValue;
-    input.select(); // auto-seleciona para facilitar reescrita
+// Funções para controle de Input com Máscara Monetária R$ em Tempo Real
+window.onValueFocus = function(input) {
+    // Coloca o cursor no final do input ao focar
+    setTimeout(() => {
+        const len = input.value.length;
+        input.setSelectionRange(len, len);
+    }, 10);
 };
 
-window.onValueBlur = function(input, category, id) {
-    const rawVal = parseFloat(input.value) || 0;
-    input.type = "text";
-    input.value = formatCurrency(rawVal);
+window.maskBRL = function(input, category, id) {
+    // Remove tudo que não for dígito
+    let value = input.value.replace(/\D/g, "");
+    
+    // Converte para decimal dividindo por 100 (ex: 1500 vira 15.00)
+    let numericValue = parseFloat(value) / 100 || 0;
+    
+    // Aplica a formatação de moeda BRL
+    input.value = formatCurrency(numericValue);
     
     // Atualiza no estado
     const item = state[category].find(x => x.id === id);
     if (item) {
-        item.value = rawVal;
+        item.value = numericValue;
         recalculateAll(true);
     }
 };
