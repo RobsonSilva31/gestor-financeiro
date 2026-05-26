@@ -251,14 +251,16 @@ function renderTable(category) {
                        oninput="updateStateValue('${category}', '${item.id}', 'description', this.value)">
             </td>
             <td>
-                <input type="text" class="table-input" 
-                       value="${formatCurrency(item.value)}" 
-                       placeholder="R$ 0,00"
-                       style="text-align: right;"
-                       onfocus="onValueFocus(this)"
-                       oninput="maskBRL(this, '${category}', '${item.id}')"
-                       onblur="onValueBlur(this, '${category}', '${item.id}')"
-                       onkeydown="if(event.key === 'Enter') this.blur()">
+                <div class="value-cell">
+                    <span class="currency-prefix">R$</span>
+                    <input type="text" class="table-input table-value-input" 
+                           value="${formatNumberBRL(item.value)}" 
+                           placeholder="0,00"
+                           onfocus="onValueFocus(this)"
+                           oninput="maskNumberBRL(this, '${category}', '${item.id}')"
+                           onblur="onValueBlur(this, '${category}', '${item.id}')"
+                           onkeydown="if(event.key === 'Enter') this.blur()">
+                </div>
             </td>
             <td style="text-align: center;">
                 <button class="btn-delete" onclick="deleteRow('${category}', '${item.id}')" title="Excluir Lançamento">
@@ -953,6 +955,11 @@ window.updateCustomSuggestions = function(category, csvValue) {
     showNotification("Sugestões Salvas", `Menu de sugestões atualizado!`, "success");
 };
 
+// Função auxiliar de formatação numérica pura (ex: 1.500,00)
+function formatNumberBRL(val) {
+    return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val);
+}
+
 // Funções para controle de Input com Máscara Monetária R$ em Tempo Real
 window.onValueFocus = function(input) {
     // Ao focar, coloca o cursor antes do separador se houver decimais vazios (,00) para facilitar a digitação
@@ -968,11 +975,11 @@ window.onValueFocus = function(input) {
     }, 10);
 };
 
-window.maskBRL = function(input, category, id) {
+window.maskNumberBRL = function(input, category, id) {
     let val = input.value;
     
-    // Remove R$ e espaços para limpar
-    let cleanVal = val.replace(/R\$\s?/g, "");
+    // Remove tudo que não for dígito, vírgula ou ponto
+    let cleanVal = val.replace(/[^0-9,.]/g, "");
     
     // Se estiver vazio, zera o valor no estado e atualiza
     if (!cleanVal) {
@@ -998,7 +1005,7 @@ window.maskBRL = function(input, category, id) {
     let formattedInt = integerPart ? parseInt(integerPart, 10).toLocaleString('pt-BR') : "0";
     
     // Reconstrói a string formatada em tempo real (sem forçar o ,00 se o usuário ainda não digitou a vírgula)
-    let formattedValue = "R$ " + formattedInt;
+    let formattedValue = formattedInt;
     if (hasSeparator) {
         formattedValue += "," + decimalPart;
     }
@@ -1014,13 +1021,14 @@ window.maskBRL = function(input, category, id) {
     const item = state[category].find(x => x.id === id);
     if (item) {
         item.value = numericValue;
-        recalculateAll(true);
+        recalculateAll(true); // Atualiza totais e gráficos em tempo real
     }
 };
 
 window.onValueBlur = function(input, category, id) {
     const item = state[category].find(x => x.id === id);
     if (item) {
-        input.value = formatCurrency(item.value);
+        // Formata completamente no blur (ex: adiciona o ,00 se faltar)
+        input.value = formatNumberBRL(item.value);
     }
 };

@@ -821,3 +821,25 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+/* Formatação Monetária - Prefixo Externo */
+.value-cell {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    background-color: transparent;
+    width: 100%;
+}
+
+.currency-prefix {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-primary);
+    user-select: none;
+}
+
+.table-value-input {
+    width: 150px !important;
+    text-align: right !important;
+}
