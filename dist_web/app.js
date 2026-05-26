@@ -957,7 +957,22 @@ window.updateCustomSuggestions = function(category, csvValue) {
 
 // Função auxiliar de formatação numérica pura (ex: 1.500,00)
 function formatNumberBRL(val) {
-    return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val);
+    if (val === undefined || val === null || isNaN(val)) {
+        return "0,00";
+    }
+    let num = parseFloat(val);
+    let isNegative = num < 0;
+    let absoluteVal = Math.abs(num);
+    let fixedVal = absoluteVal.toFixed(2);
+    let parts = fixedVal.split('.');
+    let integerPart = parts[0];
+    let decimalPart = parts[1] || "00";
+    
+    // Insere pontos de milhar na parte inteira
+    let formattedInt = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    
+    let result = formattedInt + "," + decimalPart;
+    return isNegative ? "-" + result : result;
 }
 
 // Funções para controle de Input com Máscara Monetária R$ em Tempo Real
@@ -978,11 +993,8 @@ window.onValueFocus = function(input) {
 window.maskNumberBRL = function(input, category, id) {
     let val = input.value;
     
-    // Remove tudo que não for dígito, vírgula ou ponto
-    let cleanVal = val.replace(/[^0-9,.]/g, "");
-    
-    // Se estiver vazio, zera o valor no estado e atualiza
-    if (!cleanVal) {
+    // Se estiver vazio, zera no estado
+    if (!val) {
         const item = state[category].find(x => x.id === id);
         if (item) {
             item.value = 0;
@@ -991,30 +1003,59 @@ window.maskNumberBRL = function(input, category, id) {
         return;
     }
     
-    // Divide parte inteira e decimal por vírgula ou ponto
-    let hasSeparator = cleanVal.includes(',') || cleanVal.includes('.');
-    let parts = cleanVal.split(/[,.]/);
+    // Permite apenas números, vírgula e ponto
+    let cleanVal = val.replace(/[^0-9,.]/g, "");
     
-    // Parte inteira: remove não dígitos
-    let integerPart = parts[0].replace(/\D/g, "");
+    // Encontra a posição do último separador decimal (, ou .)
+    let lastCommaIdx = cleanVal.lastIndexOf(',');
+    let lastDotIdx = cleanVal.lastIndexOf('.');
+    let separatorIdx = Math.max(lastCommaIdx, lastDotIdx);
     
-    // Parte decimal: remove não dígitos e limita a 2 casas
-    let decimalPart = parts.length > 1 ? parts[1].replace(/\D/g, "").substring(0, 2) : "";
+    let integerPartStr = "";
+    let decimalPartStr = "";
+    let hasSeparator = false;
     
-    // Formata parte inteira com pontos de milhar pt-BR
-    let formattedInt = integerPart ? parseInt(integerPart, 10).toLocaleString('pt-BR') : "0";
-    
-    // Reconstrói a string formatada em tempo real (sem forçar o ,00 se o usuário ainda não digitou a vírgula)
-    let formattedValue = formattedInt;
-    if (hasSeparator) {
-        formattedValue += "," + decimalPart;
+    if (separatorIdx !== -1) {
+        hasSeparator = true;
+        // Tudo antes do separador é parte inteira
+        integerPartStr = cleanVal.substring(0, separatorIdx).replace(/\D/g, "");
+        // Tudo após o separador é parte decimal (limitado a 2 dígitos)
+        decimalPartStr = cleanVal.substring(separatorIdx + 1).replace(/\D/g, "").substring(0, 2);
+    } else {
+        integerPartStr = cleanVal.replace(/\D/g, "");
     }
     
-    // Define o valor visual no input
+    // Formata a parte inteira manualmente com pontos de milhar
+    let formattedInt = "0";
+    if (integerPartStr) {
+        let integerParsed = parseInt(integerPartStr, 10);
+        if (!isNaN(integerParsed)) {
+            formattedInt = integerParsed.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        }
+    }
+    
+    // Reconstrói o valor a ser exibido no input em tempo real
+    let formattedValue = formattedInt;
+    if (hasSeparator) {
+        formattedValue += "," + decimalPartStr;
+    }
+    
+    // Guarda posições do cursor para evitar saltos
+    let cursorPosition = input.selectionStart;
+    let oldLength = input.value.length;
+    
     input.value = formattedValue;
     
+    // Ajusta a posição do cursor
+    let newLength = formattedValue.length;
+    let lengthDifference = newLength - oldLength;
+    let newCursorPosition = cursorPosition + lengthDifference;
+    newCursorPosition = Math.max(0, Math.min(newCursorPosition, newLength));
+    input.setSelectionRange(newCursorPosition, newCursorPosition);
+    
     // Salva o valor decimal equivalente no estado
-    let finalNumString = (integerPart || "0") + "." + (decimalPart.padEnd(2, "0"));
+    let finalDecimal = decimalPartStr || "0";
+    let finalNumString = (integerPartStr || "0") + "." + finalDecimal.padEnd(2, "0");
     let numericValue = parseFloat(finalNumString) || 0;
     
     // Atualiza o estado
