@@ -256,7 +256,9 @@ function renderTable(category) {
                        placeholder="R$ 0,00"
                        style="text-align: right;"
                        onfocus="onValueFocus(this)"
-                       oninput="maskBRL(this, '${category}', '${item.id}')">
+                       oninput="maskBRL(this, '${category}', '${item.id}')"
+                       onblur="onValueBlur(this, '${category}', '${item.id}')"
+                       onkeydown="if(event.key === 'Enter') this.blur()">
             </td>
             <td style="text-align: center;">
                 <button class="btn-delete" onclick="deleteRow('${category}', '${item.id}')" title="Excluir Lançamento">
@@ -953,27 +955,72 @@ window.updateCustomSuggestions = function(category, csvValue) {
 
 // Funções para controle de Input com Máscara Monetária R$ em Tempo Real
 window.onValueFocus = function(input) {
-    // Coloca o cursor no final do input ao focar
+    // Ao focar, coloca o cursor antes do separador se houver decimais vazios (,00) para facilitar a digitação
     setTimeout(() => {
-        const len = input.value.length;
-        input.setSelectionRange(len, len);
+        let val = input.value;
+        if (val.endsWith(",00")) {
+            let idx = val.indexOf(",");
+            input.setSelectionRange(idx, idx);
+        } else {
+            let len = val.length;
+            input.setSelectionRange(len, len);
+        }
     }, 10);
 };
 
 window.maskBRL = function(input, category, id) {
-    // Remove tudo que não for dígito
-    let value = input.value.replace(/\D/g, "");
+    let val = input.value;
     
-    // Converte para decimal dividindo por 100 (ex: 1500 vira 15.00)
-    let numericValue = parseFloat(value) / 100 || 0;
+    // Remove R$ e espaços para limpar
+    let cleanVal = val.replace(/R\$\s?/g, "");
     
-    // Aplica a formatação de moeda BRL
-    input.value = formatCurrency(numericValue);
+    // Se estiver vazio, zera o valor no estado e atualiza
+    if (!cleanVal) {
+        const item = state[category].find(x => x.id === id);
+        if (item) {
+            item.value = 0;
+            recalculateAll(true);
+        }
+        return;
+    }
     
-    // Atualiza no estado
+    // Divide parte inteira e decimal por vírgula ou ponto
+    let hasSeparator = cleanVal.includes(',') || cleanVal.includes('.');
+    let parts = cleanVal.split(/[,.]/);
+    
+    // Parte inteira: remove não dígitos
+    let integerPart = parts[0].replace(/\D/g, "");
+    
+    // Parte decimal: remove não dígitos e limita a 2 casas
+    let decimalPart = parts.length > 1 ? parts[1].replace(/\D/g, "").substring(0, 2) : "";
+    
+    // Formata parte inteira com pontos de milhar pt-BR
+    let formattedInt = integerPart ? parseInt(integerPart, 10).toLocaleString('pt-BR') : "0";
+    
+    // Reconstrói a string formatada em tempo real (sem forçar o ,00 se o usuário ainda não digitou a vírgula)
+    let formattedValue = "R$ " + formattedInt;
+    if (hasSeparator) {
+        formattedValue += "," + decimalPart;
+    }
+    
+    // Define o valor visual no input
+    input.value = formattedValue;
+    
+    // Salva o valor decimal equivalente no estado
+    let finalNumString = (integerPart || "0") + "." + (decimalPart.padEnd(2, "0"));
+    let numericValue = parseFloat(finalNumString) || 0;
+    
+    // Atualiza o estado
     const item = state[category].find(x => x.id === id);
     if (item) {
         item.value = numericValue;
         recalculateAll(true);
+    }
+};
+
+window.onValueBlur = function(input, category, id) {
+    const item = state[category].find(x => x.id === id);
+    if (item) {
+        input.value = formatCurrency(item.value);
     }
 };
