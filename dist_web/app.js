@@ -891,8 +891,6 @@ function showNotification(title, message, type = "success") {
     }, 3500);
 }
 
-document.head.appendChild(animStyle);
-
 // --------------------------------------------------------------------------
 // SUGESTÕES DE AUTOCOMPLETE E FORMATAÇÃO DE ENTRADA
 // --------------------------------------------------------------------------
