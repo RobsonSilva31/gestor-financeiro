@@ -143,8 +143,8 @@ class MainWindow(QMainWindow):
                 except Exception:
                     pass
             
-            # Se a versão do instalador for mais nova, substitui a pasta local
-            if bundle_version > local_version:
+            # Se a versão do instalador for mais nova ou igual, substitui a pasta local
+            if bundle_version >= local_version:
                 print(f"[Core] Atualizando pasta estática (Embutida {bundle_version} > Local {local_version})")
                 try:
                     if os.path.exists(self.persist_web):
