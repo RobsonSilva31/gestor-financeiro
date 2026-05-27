@@ -16,6 +16,18 @@ from PySide6.QtWebEngineCore import QWebEngineDownloadRequest, QWebEngineProfile
 DEFAULT_OWNER = "RobsonSilva31"
 DEFAULT_REPO = "gestor-financeiro"
 
+# Redirecionar stdout/stderr para arquivo de log persistente
+persist_dir = os.path.join(os.path.expanduser('~'), '.finance_manager_app')
+os.makedirs(persist_dir, exist_ok=True)
+log_path = os.path.join(persist_dir, 'app.log')
+try:
+    log_file = open(log_path, 'a', encoding='utf-8')
+    sys.stdout = log_file
+    sys.stderr = log_file
+    print("\n=== INICIANDO APLICATIVO (LOG REDIRECTED) ===")
+except Exception as e:
+    pass
+
 def check_for_updates(persist_dir, persist_web, owner, repo):
     version_url = f"https://raw.githubusercontent.com/{owner}/{repo}/main/version.json"
     zip_url = f"https://github.com/{owner}/{repo}/archive/refs/heads/main.zip"
