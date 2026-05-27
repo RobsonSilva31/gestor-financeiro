@@ -1094,29 +1094,39 @@ window.maskNumberBRL = function(input, category, id) {
         return;
     }
     
-    // Permite apenas números, vírgula e ponto
-    let cleanVal = val.replace(/[^0-9,.]/g, "");
+    // Se o usuário digitou ponto no final (ex: no teclado numérico), converte para vírgula
+    if (val.endsWith('.')) {
+        val = val.slice(0, -1) + ',';
+    }
     
-    // Encontra a posição do último separador decimal (, ou .)
-    let lastCommaIdx = cleanVal.lastIndexOf(',');
-    let lastDotIdx = cleanVal.lastIndexOf('.');
-    let separatorIdx = Math.max(lastCommaIdx, lastDotIdx);
+    // Remove todos os pontos (que são separadores de milhar da máscara)
+    let cleanVal = val.replace(/\./g, "");
+    
+    // Filtra para permitir apenas números e uma única vírgula
+    cleanVal = cleanVal.replace(/[^0-9,]/g, "");
+    
+    // Garante que só exista uma vírgula (a última)
+    let firstCommaIdx = cleanVal.indexOf(',');
+    if (firstCommaIdx !== -1) {
+        let beforeComma = cleanVal.substring(0, firstCommaIdx);
+        let afterComma = cleanVal.substring(firstCommaIdx + 1).replace(/,/g, "");
+        cleanVal = beforeComma + ',' + afterComma;
+    }
     
     let integerPartStr = "";
     let decimalPartStr = "";
     let hasSeparator = false;
     
-    if (separatorIdx !== -1) {
+    let commaIdx = cleanVal.indexOf(',');
+    if (commaIdx !== -1) {
         hasSeparator = true;
-        // Tudo antes do separador é parte inteira
-        integerPartStr = cleanVal.substring(0, separatorIdx).replace(/\D/g, "");
-        // Tudo após o separador é parte decimal (limitado a 2 dígitos)
-        decimalPartStr = cleanVal.substring(separatorIdx + 1).replace(/\D/g, "").substring(0, 2);
+        integerPartStr = cleanVal.substring(0, commaIdx);
+        decimalPartStr = cleanVal.substring(commaIdx + 1).substring(0, 2); // limita a 2 casas
     } else {
-        integerPartStr = cleanVal.replace(/\D/g, "");
+        integerPartStr = cleanVal;
     }
     
-    // Formata a parte inteira manualmente com pontos de milhar
+    // Formata a parte inteira com pontos de milhar
     let formattedInt = "0";
     if (integerPartStr) {
         let integerParsed = parseInt(integerPartStr, 10);
@@ -1125,7 +1135,6 @@ window.maskNumberBRL = function(input, category, id) {
         }
     }
     
-    // Reconstrói o valor a ser exibido no input em tempo real
     let formattedValue = formattedInt;
     if (hasSeparator) {
         formattedValue += "," + decimalPartStr;
@@ -1153,7 +1162,7 @@ window.maskNumberBRL = function(input, category, id) {
     const item = state[category].find(x => x.id === id);
     if (item) {
         item.value = numericValue;
-        recalculateAll(true); // Atualiza totais e gráficos em tempo real
+        recalculateAll(true);
     }
 };
 
