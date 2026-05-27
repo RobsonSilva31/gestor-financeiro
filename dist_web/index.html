@@ -393,30 +393,6 @@
                 <!-- 6. ABA CONFIGURAÇÕES -->
                 <section id="tab-settings" class="tab-content">
                     <div class="section-card">
-                        <h2 class="section-title"><i data-lucide="folder-sync"></i> Sincronização de Banco de Dados</h2>
-                        <p class="section-subtitle">Sincronize as atualizações feitas neste PC com outros computadores apontando o arquivo para uma pasta na nuvem (OneDrive, Dropbox, Google Drive).</p>
-                        
-                        <div class="settings-sync-panel mt-4">
-                            <div class="form-group">
-                                <label for="input-database-path">Caminho Atual do Arquivo de Dados (.json)</label>
-                                <div class="input-group-btn">
-                                    <input type="text" id="input-database-path" readonly class="form-control" style="background: rgba(255,255,255,0.05); color: #ccc;">
-                                    <button class="btn btn-secondary" id="btn-change-database-path">
-                                        <i data-lucide="folder-open"></i> Alterar Caminho
-                                    </button>
-                                </div>
-                                <small class="form-text text-muted">Para compartilhar com outro PC, salve o arquivo em uma pasta sincronizada do OneDrive/Google Drive e aponte o app do outro PC para o mesmo arquivo.</small>
-                            </div>
-                            
-                            <div class="sync-actions mt-4">
-                                <button class="btn btn-secondary" id="btn-reset-default-path">
-                                    <i data-lucide="rotate-ccw"></i> Restaurar Caminho Padrão
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="section-card mt-6">
                         <h2 class="section-title"><i data-lucide="edit-3"></i> Personalizar Sugestões do Menu</h2>
                         <p class="section-subtitle">Edite os termos sugeridos ao digitar nas tabelas. Separe as opções por vírgula.</p>
                         
@@ -449,25 +425,6 @@
                                 <label>Sugestões de Investimentos</label>
                                 <input type="text" id="suggest-investments" class="form-control" onchange="updateCustomSuggestions('investments', this.value)">
                             </div>
-                        </div>
-                    </div>
-
-                    <div class="section-card mt-6">
-                        <h2 class="section-title"><i data-lucide="git-pull-request"></i> Atualizações do Aplicativo</h2>
-                        <p class="section-subtitle">Configure o repositório remoto para atualização automática do código (Auto-Updater).</p>
-                        
-                        <div class="settings-sync-panel mt-4">
-                            <div class="grid-2col">
-                                <div class="form-group">
-                                    <label>Usuário GitHub (Proprietário)</label>
-                                    <input type="text" id="github-owner" value="RobsonSilva31" class="form-control">
-                                </div>
-                                <div class="form-group">
-                                    <label>Repositório GitHub</label>
-                                    <input type="text" id="github-repo" value="gestor-financeiro" class="form-control">
-                                </div>
-                            </div>
-                            <small class="form-text text-muted mt-2">Se você fizer modificações no código, compilar e subir para este repositório, outros computadores com este mesmo app atualizarão seus componentes automaticamente ao abrir.</small>
                         </div>
                     </div>
                 </section>
