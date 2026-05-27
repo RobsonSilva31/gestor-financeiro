@@ -192,6 +192,15 @@ function setupEventListeners() {
         });
     }
 
+    // Botão Atualizar Carteira (Segundo plano)
+    const btnUpdateInvestidor10 = document.getElementById("btn-update-investidor10");
+    if (btnUpdateInvestidor10) {
+        btnUpdateInvestidor10.addEventListener("click", () => {
+            showNotification("Atualizando", "Puxando atualizações do Investidor10...", "info");
+            console.log("UPDATE_INVESTIDOR10:");
+        });
+    }
+
     // Botão Alterar Caminho do Banco (Configurações)
     const btnChangePath = document.getElementById("btn-change-database-path");
     if (btnChangePath) {

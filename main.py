@@ -624,6 +624,149 @@ class MainWindow(QMainWindow):
             print(f"[Core] Importando dados de investimentos para o frontend: {import_json}")
             self.browser.page().runJavaScript(f"window.importInvestmentsFromPython('{escaped_import}');")
 
+    # Atualiza a carteira em segundo plano sem abrir janela
+    def auto_update_investidor10(self):
+        print("[Core] Iniciando atualização automática em segundo plano do Investidor10...")
+        
+        self.bg_browser = QWebEngineView(self)
+        self.bg_page = QWebEnginePage(self.profile, self.bg_browser)
+        self.bg_browser.setPage(self.bg_page)
+        
+        self.bg_page.settings().setAttribute(QWebEngineSettings.LocalStorageEnabled, True)
+        self.bg_page.settings().setAttribute(QWebEngineSettings.AutoLoadImages, False)
+        
+        self.bg_browser.loadFinished.connect(self.on_bg_load_finished)
+        self.bg_browser.setUrl(QUrl("https://investidor10.com.br/carteira/"))
+
+    def on_bg_load_finished(self, ok):
+        if not ok:
+            print("[Core] Falha ao carregar carteira em segundo plano.")
+            self.browser.page().runJavaScript("showNotification('Erro de Conexão', 'Não foi possível acessar o Investidor10.', 'danger');")
+            self.bg_browser.deleteLater()
+            self.bg_browser = None
+            return
+            
+        url = self.bg_browser.url().toString()
+        print(f"[Core] Página em segundo plano carregada. URL: {url}")
+        
+        if "login" in url:
+            print("[Core] Sessão expirada no Investidor10. Redirecionando usuário para login...")
+            self.browser.page().runJavaScript("showNotification('Sessão Expirada', 'Por favor, conecte novamente ao Investidor10.', 'warning');")
+            self.open_investidor10_sync()
+            self.bg_browser.deleteLater()
+            self.bg_browser = None
+            return
+            
+        js_script = """
+        (function() {
+            const data = {};
+            const categories = {
+                'Ações (B3)': [/ações/i, /ações nacionais/i, /bovespa/i, /ações br/i],
+                'Fundos Imobiliários (FIIs)': [/fii/i, /fundos imobiliários/i, /fundos imobiliario/i, /fiis/i],
+                'Stock': [/stock/i, /ações internacionais/i, /ações estrangeiras/i, /stocks/i, /ações eua/i],
+                'ETF': [/etf/i, /etfs/i, /etf nacional/i, /etf internacional/i],
+                'Tesouro Direto': [/tesouro/i, /tesouro direto/i, /títulos públicos/i],
+                'Criptomoedas': [/cripto/i, /criptomoedas/i, /bitcoin/i, /criptoativos/i],
+                'CDB 100% CDI': [/cdb/i, /renda fixa/i, /poupança/i, /lc/i, /lci/i, /lca/i, /poupança/i, /tesouro selic/i]
+            };
+
+            function parseValue(text) {
+                if (!text) return null;
+                const cleaned = text.replace(/[^\\d.,]/g, '').trim();
+                if (!cleaned) return null;
+                if (cleaned.includes(',') && cleaned.includes('.')) {
+                    if (cleaned.indexOf(',') > cleaned.indexOf('.')) {
+                        return parseFloat(cleaned.replace(/\\./g, '').replace(',', '.'));
+                    } else {
+                        return parseFloat(cleaned.replace(/,/g, ''));
+                    }
+                }
+                if (cleaned.includes(',')) {
+                    const parts = cleaned.split(',');
+                    if (parts.length === 2 && parts[1].length <= 2) {
+                        return parseFloat(cleaned.replace(',', '.'));
+                    }
+                    return parseFloat(cleaned.replace(/,/g, ''));
+                }
+                return parseFloat(cleaned);
+            }
+
+            // Método 1: Chart.js
+            try {
+                const canvases = document.querySelectorAll('canvas');
+                canvases.forEach(canvas => {
+                    for (let prop in canvas) {
+                        if (prop.toLowerCase().includes('chart') && canvas[prop] && canvas[prop].config) {
+                            const chart = canvas[prop];
+                            const labels = chart.data.labels;
+                            const datasets = chart.data.datasets;
+                            if (labels && datasets && datasets.length > 0) {
+                                const dataset = datasets[0];
+                                const values = dataset.data;
+                                if (labels.length === values.length) {
+                                    labels.forEach((label, idx) => {
+                                        const val = parseFloat(values[idx]);
+                                        if (!isNaN(val) && val > 0) {
+                                            for (const [key, regexes] of Object.entries(categories)) {
+                                                for (const regex of regexes) {
+                                                    if (regex.test(label)) {
+                                                        data[key] = val;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (e) {}
+
+            // Método 2: DOM
+            const rows = document.querySelectorAll('tr, div.item, div.row, li, div.card, div.patrimonio-item');
+            rows.forEach(row => {
+                const text = (row.innerText || '').trim();
+                if (text.length > 0 && text.length < 300) {
+                    for (const [key, regexes] of Object.entries(categories)) {
+                        if (data[key] !== undefined) continue;
+                        for (const regex of regexes) {
+                            if (regex.test(text)) {
+                                const cells = row.querySelectorAll('td, span, div, p');
+                                for (let cell of cells) {
+                                    const cellText = (cell.innerText || '').trim();
+                                    if (cellText.includes('R$')) {
+                                        const val = parseValue(cellText);
+                                        if (val !== null && val > 0 && !cellText.includes('%')) {
+                                            data[key] = val;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            return data;
+        })()
+        """
+        self.bg_browser.page().runJavaScript(js_script, self.process_bg_scraped_data)
+
+    def process_bg_scraped_data(self, result):
+        if not result or len(result) == 0:
+            print("[Core] Nenhum dado raspado em segundo plano.")
+            self.browser.page().runJavaScript("showNotification('Atualização Falhou', 'Não encontramos dados na sua carteira. Abra a conexão manual.', 'warning');")
+        else:
+            import_json = json.dumps(result)
+            escaped_import = import_json.replace('\\', '\\\\').replace("'", "\\'")
+            print(f"[Core] Atualização automática: Importando dados de investimentos para o frontend: {import_json}")
+            self.browser.page().runJavaScript(f"window.importInvestmentsFromPython('{escaped_import}');")
+            
+        self.bg_browser.deleteLater()
+        self.bg_browser = None
+
 if __name__ == '__main__':
     # Evita que o Windows agrupe o app com o ícone genérico do Python na barra de tarefas
     import ctypes
