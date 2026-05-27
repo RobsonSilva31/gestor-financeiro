@@ -272,9 +272,9 @@ class MainWindow(QMainWindow):
                     with open(self.data_filepath, 'r', encoding='utf-8') as f:
                         data_str = f.read().strip()
                     if data_str:
-                        # Valida JSON básico
-                        json.loads(data_str)
-                        escaped_data = data_str.replace('\\', '\\\\').replace("'", "\\'")
+                        # Valida e minifica o JSON para evitar erros com quebras de linha em strings do JS
+                        minified_data = json.dumps(json.loads(data_str), ensure_ascii=False)
+                        escaped_data = minified_data.replace('\\', '\\\\').replace("'", "\\'")
                         self.browser.page().runJavaScript(f"window.loadDataFromPython('{escaped_data}');")
                 except Exception as e:
                     print(f"[Core] Erro ao ler banco de dados e passar pro JS: {e}")
@@ -362,7 +362,11 @@ class MainWindow(QMainWindow):
             self.browser.page().runJavaScript(f"window.updateDatabasePathFromPython('{escaped_path}');")
             
             # Envia as informações do novo arquivo para serem renderizadas na tela
-            escaped_data = existing_data_str.replace('\\', '\\\\').replace("'", "\\'")
+            try:
+                minified_data = json.dumps(json.loads(existing_data_str), ensure_ascii=False)
+            except Exception:
+                minified_data = "{}"
+            escaped_data = minified_data.replace('\\', '\\\\').replace("'", "\\'")
             self.browser.page().runJavaScript(f"window.loadDataFromPython('{escaped_data}');")
 
 if __name__ == '__main__':
