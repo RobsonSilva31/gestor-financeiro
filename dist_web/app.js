@@ -2,6 +2,69 @@
    APP.JS - LÓGICA DE NEGÓCIO, CÁLCULOS E GRÁFICOS
    ========================================================================== */
 
+const themeColorsMap = {
+    obsidian: {
+        primary: '#00e699',
+        income: '#2cef87',
+        expense: '#ff4d6d',
+        variable: '#ffd166',
+        unexpected: '#ec4899',
+        investment: '#00b4d8',
+        leftover: '#00e699',
+        textColor: '#9ca3af',
+        gridColor: 'rgba(255, 255, 255, 0.04)',
+        borderColor: '#0f1218'
+    },
+    light: {
+        primary: '#0096c7',
+        income: '#10b981',
+        expense: '#ef4444',
+        variable: '#f59e0b',
+        unexpected: '#d946ef',
+        investment: '#0284c7',
+        leftover: '#10b981',
+        textColor: '#4b5563',
+        gridColor: 'rgba(0, 0, 0, 0.06)',
+        borderColor: '#ffffff'
+    },
+    aurora: {
+        primary: '#a855f7',
+        income: '#a78bfa',
+        expense: '#f43f5e',
+        variable: '#fb7185',
+        unexpected: '#d946ef',
+        investment: '#6366f1',
+        leftover: '#a855f7',
+        textColor: '#9ca3af',
+        gridColor: 'rgba(255, 255, 255, 0.04)',
+        borderColor: '#0f1218'
+    },
+    volcano: {
+        primary: '#f97316',
+        income: '#fb923c',
+        expense: '#ef4444',
+        variable: '#facc15',
+        unexpected: '#ec4899',
+        investment: '#ea580c',
+        leftover: '#f97316',
+        textColor: '#9ca3af',
+        gridColor: 'rgba(255, 255, 255, 0.04)',
+        borderColor: '#0f1218'
+    },
+    gold: {
+        primary: '#eab308',
+        income: '#fde047',
+        expense: '#f43f5e',
+        variable: '#f97316',
+        unexpected: '#ec4899',
+        investment: '#ca8a04',
+        leftover: '#eab308',
+        textColor: '#9ca3af',
+        gridColor: 'rgba(255, 255, 255, 0.04)',
+        borderColor: '#0f1218'
+    }
+};
+
 // Estado Global do Aplicativo
 let state = {
     salaries: [],
@@ -15,6 +78,7 @@ let state = {
         databasePath: "dados_financeiros.json",
         githubOwner: "RobsonSilva31",
         githubRepo: "gestor-financeiro",
+        theme: "obsidian",
         suggestions: {
             salaries: ["Salário Principal", "Salário Cônjuge", "Pró-labore"],
             extraIncome: ["Freelance", "Venda de Produto", "Rendimento", "Reembolso"],
@@ -51,6 +115,13 @@ document.addEventListener("DOMContentLoaded", () => {
     // Preencher datalists de sugestões e inputs na UI
     populateDatalists();
     fillSuggestionsInputs();
+    
+    // Aplicar o tema configurado
+    if (state.settings && state.settings.theme) {
+        setAppTheme(state.settings.theme, false);
+    } else {
+        setAppTheme('obsidian', false);
+    }
     
     // Renderizar Tabelas e Gráficos Inicialmente
     renderAllTables();
@@ -626,6 +697,9 @@ function updateDetailedInsights(income, fixed, variable, unexpected, invested, n
 // ATUALIZAÇÃO DOS GRÁFICOS (CHART.JS)
 // --------------------------------------------------------------------------
 function updateCharts(fixed, variable, unexpected, invested, leftover, income) {
+    const currentTheme = (state.settings && state.settings.theme) ? state.settings.theme : 'obsidian';
+    const tColors = themeColorsMap[currentTheme] || themeColorsMap.obsidian;
+    
     // 1. Gráfico de Rosca (Distribuição de Recursos)
     const distCanvas = document.getElementById("chartDistribution");
     if (distCanvas) {
@@ -635,8 +709,8 @@ function updateCharts(fixed, variable, unexpected, invested, leftover, income) {
         // Remove valores zerados para o gráfico ficar limpo
         const filteredLabels = [];
         const filteredData = [];
-        const colors = ['#ff4d6d', '#ffd166', '#ec4899', '#00b4d8', '#00e699'];
         const filteredColors = [];
+        const colors = [tColors.expense, tColors.variable, tColors.unexpected, tColors.investment, tColors.leftover];
         
         dataValues.forEach((val, i) => {
             if (val > 0) {
@@ -650,6 +724,10 @@ function updateCharts(fixed, variable, unexpected, invested, leftover, income) {
             chartDistributionInstance.data.labels = filteredLabels;
             chartDistributionInstance.data.datasets[0].data = filteredData;
             chartDistributionInstance.data.datasets[0].backgroundColor = filteredColors;
+            chartDistributionInstance.data.datasets[0].borderColor = tColors.borderColor;
+            if (chartDistributionInstance.options.plugins && chartDistributionInstance.options.plugins.legend) {
+                chartDistributionInstance.options.plugins.legend.labels.color = tColors.textColor;
+            }
             chartDistributionInstance.update();
         } else {
             chartDistributionInstance = new Chart(distCanvas, {
@@ -660,7 +738,7 @@ function updateCharts(fixed, variable, unexpected, invested, leftover, income) {
                         data: filteredData,
                         backgroundColor: filteredColors,
                         borderWidth: 1,
-                        borderColor: '#0f1218'
+                        borderColor: tColors.borderColor
                     }]
                 },
                 options: {
@@ -670,7 +748,7 @@ function updateCharts(fixed, variable, unexpected, invested, leftover, income) {
                         legend: {
                             position: 'bottom',
                             labels: {
-                                color: '#9ca3af',
+                                color: tColors.textColor,
                                 font: { family: 'Outfit', size: 11 },
                                 boxWidth: 12
                             }
@@ -696,6 +774,14 @@ function updateCharts(fixed, variable, unexpected, invested, leftover, income) {
         
         if (chartExpensesInstance) {
             chartExpensesInstance.data.datasets[0].data = [income, totalExp, invested];
+            chartExpensesInstance.data.datasets[0].backgroundColor = [tColors.income, tColors.expense, tColors.investment];
+            if (chartExpensesInstance.options.scales && chartExpensesInstance.options.scales.y) {
+                chartExpensesInstance.options.scales.y.grid.color = tColors.gridColor;
+                chartExpensesInstance.options.scales.y.ticks.color = tColors.textColor;
+            }
+            if (chartExpensesInstance.options.scales && chartExpensesInstance.options.scales.x) {
+                chartExpensesInstance.options.scales.x.ticks.color = tColors.textColor;
+            }
             chartExpensesInstance.update();
         } else {
             chartExpensesInstance = new Chart(expCanvas, {
@@ -704,7 +790,7 @@ function updateCharts(fixed, variable, unexpected, invested, leftover, income) {
                     labels: ['Receita Total', 'Gastos Totais', 'Investimentos'],
                     datasets: [{
                         data: [income, totalExp, invested],
-                        backgroundColor: ['#2cef87', '#ff4d6d', '#00b4d8'],
+                        backgroundColor: [tColors.income, tColors.expense, tColors.investment],
                         borderRadius: 6,
                         borderWidth: 0,
                         maxBarThickness: 45
@@ -715,9 +801,9 @@ function updateCharts(fixed, variable, unexpected, invested, leftover, income) {
                     maintainAspectRatio: false,
                     scales: {
                         y: {
-                            grid: { color: 'rgba(255,255,255,0.04)' },
+                            grid: { color: tColors.gridColor },
                             ticks: {
-                                color: '#9ca3af',
+                                color: tColors.textColor,
                                 font: { family: 'Outfit', size: 10 },
                                 callback: function(value) {
                                     return value >= 1000 ? 'R$ ' + (value/1000) + 'k' : 'R$ ' + value;
@@ -727,7 +813,7 @@ function updateCharts(fixed, variable, unexpected, invested, leftover, income) {
                         x: {
                             grid: { display: false },
                             ticks: {
-                                color: '#9ca3af',
+                                color: tColors.textColor,
                                 font: { family: 'Outfit', size: 11 }
                             }
                         }
@@ -789,6 +875,13 @@ window.loadDataFromPython = function(jsonDataString) {
         // Renderizar novamente todas as abas
         renderAllTables();
         recalculateAll(false); // Recalcular sem salvar de volta no Python para não dar loop
+        
+        // Aplicar tema carregado do arquivo JSON
+        if (state.settings && state.settings.theme) {
+            setAppTheme(state.settings.theme, false);
+        } else {
+            setAppTheme('obsidian', false);
+        }
         
         showNotification("Carregado", "Os lançamentos do arquivo foram atualizados com sucesso!", "info");
     } catch (e) {
@@ -1070,4 +1163,43 @@ window.onValueBlur = function(input, category, id) {
         // Formata completamente no blur (ex: adiciona o ,00 se faltar)
         input.value = formatNumberBRL(item.value);
     }
+};
+
+// --------------------------------------------------------------------------
+// DEFINIÇÃO DO TEMA DO APLICATIVO
+// --------------------------------------------------------------------------
+window.setAppTheme = function(themeName, shouldSave = true) {
+    // 1. Remover classes anteriores de tema do body
+    document.body.classList.remove('theme-obsidian', 'theme-light', 'theme-aurora', 'theme-volcano', 'theme-gold');
+    // 2. Adicionar o novo tema
+    document.body.classList.add(`theme-${themeName}`);
+    
+    // 3. Atualizar botões visuais
+    const themeButtons = document.querySelectorAll(".theme-btn");
+    themeButtons.forEach(btn => {
+        if (btn.getAttribute("data-theme") === themeName) {
+            btn.classList.add("active");
+        } else {
+            btn.classList.remove("active");
+        }
+    });
+    
+    // 4. Salvar no estado
+    if (!state.settings) {
+        state.settings = {};
+    }
+    state.settings.theme = themeName;
+    
+    // 5. Redesenhar gráficos com as cores do tema
+    updateChartColorsForTheme(themeName);
+    
+    // 6. Persistir no Python (I/O debounced)
+    if (shouldSave) {
+        triggerSaveToPython();
+    }
+};
+
+window.updateChartColorsForTheme = function(themeName) {
+    // Forçar recálculo para atualizar cores dos gráficos
+    recalculateAll(false);
 };

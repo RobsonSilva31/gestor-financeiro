@@ -392,7 +392,37 @@
 
                 <!-- 6. ABA CONFIGURAÇÕES -->
                 <section id="tab-settings" class="tab-content">
+                    <!-- SELETOR DE TEMAS -->
                     <div class="section-card">
+                        <h2 class="section-title"><i data-lucide="palette"></i> Selecionar Tema do Painel</h2>
+                        <p class="section-subtitle">Escolha uma estética visual para todo o layout do seu gerenciador financeiro.</p>
+                        
+                        <div class="theme-selector-grid mt-4">
+                            <button class="theme-btn active" data-theme="obsidian" onclick="setAppTheme('obsidian')">
+                                <div class="theme-preview obsidian"></div>
+                                <span>Obsidian (Padrão)</span>
+                            </button>
+                            <button class="theme-btn" data-theme="light" onclick="setAppTheme('light')">
+                                <div class="theme-preview light"></div>
+                                <span>Snow Mint (Claro)</span>
+                            </button>
+                            <button class="theme-btn" data-theme="aurora" onclick="setAppTheme('aurora')">
+                                <div class="theme-preview aurora"></div>
+                                <span>Aurora (Roxo)</span>
+                            </button>
+                            <button class="theme-btn" data-theme="volcano" onclick="setAppTheme('volcano')">
+                                <div class="theme-preview volcano"></div>
+                                <span>Vulcão (Laranja)</span>
+                            </button>
+                            <button class="theme-btn" data-theme="gold" onclick="setAppTheme('gold')">
+                                <div class="theme-preview gold"></div>
+                                <span>Midnight Gold (Ouro)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- PERSONALIZAR SUGESTÕES -->
+                    <div class="section-card mt-6">
                         <h2 class="section-title"><i data-lucide="edit-3"></i> Personalizar Sugestões do Menu</h2>
                         <p class="section-subtitle">Edite os termos sugeridos ao digitar nas tabelas. Separe as opções por vírgula.</p>
                         

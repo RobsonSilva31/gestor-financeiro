@@ -4,9 +4,16 @@
 
 /* Variáveis de Cores e Temas */
 :root {
-    --bg-app: #06070a;
-    --bg-sidebar: rgba(10, 12, 18, 0.6);
-    --bg-card: rgba(13, 16, 23, 0.45);
+    --bg-app: #05080c;
+    --bg-gradient: linear-gradient(135deg, #05080c 0%, #071612 50%, #05080c 100%);
+    --bg-sidebar: rgba(8, 12, 18, 0.65);
+    --bg-card: rgba(11, 20, 18, 0.4);
+    --bg-header: rgba(11, 20, 18, 0.35);
+    --bg-content-body: rgba(8, 15, 12, 0.2);
+    --bg-input-focus: rgba(13, 16, 23, 0.8);
+    --bg-input-hover: rgba(255, 255, 255, 0.02);
+    --bg-item-hover: rgba(255, 255, 255, 0.02);
+    
     --border-color: rgba(255, 255, 255, 0.04);
     --border-hover: rgba(255, 255, 255, 0.08);
     --border-focus: rgba(0, 230, 153, 0.35);
@@ -18,6 +25,7 @@
     --color-variable: #f59e0b;     /* Âmbar para variáveis */
     --color-investment: #00b4d8;   /* Azul ciano neon para investimentos */
     
+    --logo-gradient: linear-gradient(135deg, #ffffff 30%, #a7f3d0 100%);
     --text-main: #f3f4f6;
     --text-muted: #8a929e;
     --text-disabled: #4e5664;
@@ -34,6 +42,122 @@
     --shadow-premium: 0 16px 40px rgba(0, 0, 0, 0.65);
 }
 
+/* Temas Visuais Globais */
+body.theme-obsidian {
+    --bg-app: #05080c;
+    --bg-gradient: linear-gradient(135deg, #05080c 0%, #071612 50%, #05080c 100%);
+    --bg-sidebar: rgba(8, 12, 18, 0.65);
+    --bg-card: rgba(11, 20, 18, 0.4);
+    --bg-header: rgba(11, 20, 18, 0.35);
+    --bg-content-body: rgba(8, 15, 12, 0.2);
+    --bg-input-focus: rgba(13, 16, 23, 0.8);
+    --bg-input-hover: rgba(255, 255, 255, 0.02);
+    --bg-item-hover: rgba(255, 255, 255, 0.02);
+    --border-color: rgba(0, 230, 153, 0.08);
+    --border-hover: rgba(0, 230, 153, 0.18);
+    --border-focus: rgba(0, 230, 153, 0.4);
+    --color-primary: #00e699;
+    --color-primary-rgb: 0, 230, 153;
+    --logo-gradient: linear-gradient(135deg, #ffffff 30%, #a7f3d0 100%);
+    --text-main: #f3f4f6;
+    --text-muted: #8a929e;
+    --text-disabled: #4e5664;
+    --shadow-glow: 0 0 20px rgba(0, 230, 153, 0.08);
+    --shadow-premium: 0 16px 40px rgba(0, 0, 0, 0.65);
+}
+
+body.theme-light {
+    --bg-app: #f4f7f6;
+    --bg-gradient: linear-gradient(135deg, #f4f7f6 0%, #e9eff5 50%, #f4f7f6 100%);
+    --bg-sidebar: rgba(255, 255, 255, 0.75);
+    --bg-card: rgba(255, 255, 255, 0.7);
+    --bg-header: rgba(255, 255, 255, 0.6);
+    --bg-content-body: rgba(255, 255, 255, 0.45);
+    --bg-input-focus: rgba(255, 255, 255, 0.95);
+    --bg-input-hover: rgba(0, 0, 0, 0.03);
+    --bg-item-hover: rgba(0, 0, 0, 0.03);
+    --border-color: rgba(0, 150, 199, 0.1);
+    --border-hover: rgba(0, 150, 199, 0.2);
+    --border-focus: rgba(0, 150, 199, 0.45);
+    --color-primary: #0096c7;
+    --color-primary-rgb: 0, 150, 199;
+    --logo-gradient: linear-gradient(135deg, #0f172a 30%, #0096c7 100%);
+    --text-main: #1f2937;
+    --text-muted: #4b5563;
+    --text-disabled: #9ca3af;
+    --shadow-glow: 0 0 20px rgba(0, 150, 199, 0.08);
+    --shadow-premium: 0 16px 40px rgba(15, 23, 42, 0.08);
+}
+
+body.theme-aurora {
+    --bg-app: #060514;
+    --bg-gradient: linear-gradient(135deg, #060514 0%, #1a0f35 50%, #060514 100%);
+    --bg-sidebar: rgba(10, 8, 20, 0.65);
+    --bg-card: rgba(18, 14, 35, 0.4);
+    --bg-header: rgba(18, 14, 35, 0.35);
+    --bg-content-body: rgba(12, 10, 24, 0.25);
+    --bg-input-focus: rgba(18, 12, 33, 0.8);
+    --bg-input-hover: rgba(255, 255, 255, 0.02);
+    --bg-item-hover: rgba(255, 255, 255, 0.02);
+    --border-color: rgba(168, 85, 247, 0.08);
+    --border-hover: rgba(168, 85, 247, 0.18);
+    --border-focus: rgba(168, 85, 247, 0.4);
+    --color-primary: #a855f7;
+    --color-primary-rgb: 168, 85, 247;
+    --logo-gradient: linear-gradient(135deg, #ffffff 30%, #e9d5ff 100%);
+    --text-main: #f3f4f6;
+    --text-muted: #9ca3af;
+    --text-disabled: #4b5563;
+    --shadow-glow: 0 0 20px rgba(168, 85, 247, 0.08);
+    --shadow-premium: 0 16px 40px rgba(0, 0, 0, 0.65);
+}
+
+body.theme-volcano {
+    --bg-app: #0c0505;
+    --bg-gradient: linear-gradient(135deg, #0c0505 0%, #250b09 50%, #0c0505 100%);
+    --bg-sidebar: rgba(14, 8, 8, 0.65);
+    --bg-card: rgba(28, 14, 12, 0.4);
+    --bg-header: rgba(28, 14, 12, 0.35);
+    --bg-content-body: rgba(20, 10, 9, 0.25);
+    --bg-input-focus: rgba(26, 12, 10, 0.8);
+    --bg-input-hover: rgba(255, 255, 255, 0.02);
+    --bg-item-hover: rgba(255, 255, 255, 0.02);
+    --border-color: rgba(239, 68, 68, 0.08);
+    --border-hover: rgba(239, 68, 68, 0.18);
+    --border-focus: rgba(239, 68, 68, 0.4);
+    --color-primary: #f97316;
+    --color-primary-rgb: 249, 115, 22;
+    --logo-gradient: linear-gradient(135deg, #ffffff 30%, #fecaca 100%);
+    --text-main: #f3f4f6;
+    --text-muted: #9ca3af;
+    --text-disabled: #4b5563;
+    --shadow-glow: 0 0 20px rgba(249, 115, 22, 0.08);
+    --shadow-premium: 0 16px 40px rgba(0, 0, 0, 0.65);
+}
+
+body.theme-gold {
+    --bg-app: #080705;
+    --bg-gradient: linear-gradient(135deg, #080705 0%, #1e170c 50%, #080705 100%);
+    --bg-sidebar: rgba(12, 10, 8, 0.65);
+    --bg-card: rgba(26, 20, 13, 0.4);
+    --bg-header: rgba(26, 20, 13, 0.35);
+    --bg-content-body: rgba(18, 14, 10, 0.25);
+    --bg-input-focus: rgba(22, 18, 12, 0.8);
+    --bg-input-hover: rgba(255, 255, 255, 0.02);
+    --bg-item-hover: rgba(255, 255, 255, 0.02);
+    --border-color: rgba(234, 179, 8, 0.08);
+    --border-hover: rgba(234, 179, 8, 0.18);
+    --border-focus: rgba(234, 179, 8, 0.4);
+    --color-primary: #eab308;
+    --color-primary-rgb: 234, 179, 8;
+    --logo-gradient: linear-gradient(135deg, #ffffff 30%, #fde047 100%);
+    --text-main: #f3f4f6;
+    --text-muted: #9ca3af;
+    --text-disabled: #4b5563;
+    --shadow-glow: 0 0 20px rgba(234, 179, 8, 0.08);
+    --shadow-premium: 0 16px 40px rgba(0, 0, 0, 0.65);
+}
+
 /* Reset Geral */
 * {
     margin: 0;
@@ -45,14 +169,11 @@
 }
 
 body {
-    background-color: var(--bg-app);
+    background: var(--bg-gradient);
     color: var(--text-main);
     overflow: hidden;
     height: 100vh;
-    background-image: 
-        radial-gradient(circle at 10% 20%, rgba(0, 230, 153, 0.03) 0%, transparent 40%),
-        radial-gradient(circle at 90% 80%, rgba(0, 180, 216, 0.03) 0%, transparent 40%),
-        radial-gradient(circle at 50% 50%, rgba(13, 16, 23, 0.15) 0%, transparent 100%);
+    transition: var(--transition-smooth);
 }
 
 /* Estrutura do App - Layout Flutuante Premium */
@@ -102,7 +223,7 @@ body {
     font-size: 19px;
     font-weight: 800;
     letter-spacing: -0.5px;
-    background: linear-gradient(135deg, #ffffff 30%, #a7f3d0 100%);
+    background: var(--logo-gradient);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -139,21 +260,21 @@ body {
 
 .menu-item:hover {
     color: var(--text-main);
-    background-color: rgba(255, 255, 255, 0.02);
-    border-color: rgba(255, 255, 255, 0.03);
+    background-color: var(--bg-item-hover);
+    border-color: var(--border-hover);
     transform: translateX(2px);
 }
 
 .menu-item.active {
     color: var(--color-primary);
-    background: rgba(0, 230, 153, 0.06);
-    border: 1px solid rgba(0, 230, 153, 0.15);
-    box-shadow: inset 0 0 12px rgba(0, 230, 153, 0.02);
+    background: rgba(var(--color-primary-rgb), 0.06);
+    border: 1px solid rgba(var(--color-primary-rgb), 0.15);
+    box-shadow: inset 0 0 12px rgba(var(--color-primary-rgb), 0.02);
 }
 
 .menu-item.active i {
     color: var(--color-primary);
-    filter: drop-shadow(0 0 6px rgba(0, 230, 153, 0.5));
+    filter: drop-shadow(0 0 6px rgba(var(--color-primary-rgb), 0.5));
 }
 
 .sidebar-footer {
@@ -203,7 +324,7 @@ body {
     justify-content: space-between;
     padding: 0 28px;
     flex-shrink: 0;
-    background-color: rgba(13, 16, 23, 0.4);
+    background-color: var(--bg-header);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     border-bottom: none;
@@ -227,12 +348,13 @@ body {
     flex-grow: 1;
     padding: 28px;
     overflow-y: auto;
-    background-color: rgba(10, 12, 18, 0.25);
+    background-color: var(--bg-content-body);
     border: 1px solid var(--border-color);
     border-radius: 0 0 var(--radius-lg) var(--radius-md);
     box-shadow: var(--shadow-premium);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
+    transition: var(--transition-smooth);
 }
 
 /* Estilização Scrollbar Premium */
@@ -589,15 +711,15 @@ body {
 }
 
 .table-input:hover {
-    background-color: rgba(255, 255, 255, 0.02);
-    border-color: rgba(255, 255, 255, 0.04);
+    background-color: var(--bg-input-hover);
+    border-color: var(--border-hover);
 }
 
 .table-input:focus {
     outline: none;
-    background-color: rgba(13, 16, 23, 0.8);
+    background-color: var(--bg-input-focus);
     border-color: var(--color-primary);
-    box-shadow: 0 0 12px rgba(0, 230, 153, 0.1);
+    box-shadow: 0 0 12px rgba(var(--color-primary-rgb), 0.1);
 }
 
 /* Ações nas tabelas */
@@ -872,7 +994,7 @@ body {
 
 .form-control {
     width: 100%;
-    background-color: rgba(255, 255, 255, 0.02);
+    background-color: var(--bg-input-hover);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
     color: var(--text-main);
@@ -884,8 +1006,8 @@ body {
 .form-control:focus {
     outline: none;
     border-color: var(--color-primary);
-    background-color: rgba(13, 16, 23, 0.8);
-    box-shadow: 0 0 12px rgba(0, 230, 153, 0.15);
+    background-color: var(--bg-input-focus);
+    box-shadow: 0 0 12px rgba(var(--color-primary-rgb), 0.15);
 }
 
 .form-text {
@@ -928,4 +1050,80 @@ body {
 
 .notification-anim-style {
     display: none;
+}
+
+/* ==========================================================================
+   SELETOR DE TEMAS - PRÉ-VISUALIZAÇÃO DE DEGRADÊS
+   ========================================================================== */
+.theme-selector-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+}
+
+.theme-btn {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    color: var(--text-main);
+    font-weight: 500;
+    transition: var(--transition-smooth);
+}
+
+.theme-btn:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-2px);
+    background-color: var(--bg-input-hover);
+}
+
+.theme-btn.active {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 12px rgba(var(--color-primary-rgb), 0.15);
+    background: rgba(var(--color-primary-rgb), 0.04);
+}
+
+.theme-btn span {
+    font-size: 13px;
+}
+
+.theme-preview {
+    width: 100%;
+    height: 48px;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.theme-preview.obsidian {
+    background: linear-gradient(135deg, #05080c 0%, #071612 50%, #00e699 100%);
+}
+
+.theme-preview.light {
+    background: linear-gradient(135deg, #f4f7f6 0%, #e9eff5 50%, #0096c7 100%);
+    border-color: rgba(0, 0, 0, 0.05);
+}
+
+.theme-preview.aurora {
+    background: linear-gradient(135deg, #060514 0%, #1a0f35 50%, #a855f7 100%);
+}
+
+.theme-preview.volcano {
+    background: linear-gradient(135deg, #0c0505 0%, #250b09 50%, #f97316 100%);
+}
+
+.theme-preview.gold {
+    background: linear-gradient(135deg, #080705 0%, #1e170c 50%, #eab308 100%);
+}
+
+/* Helper adicionado para valores de destaque líquido e investimentos */
+.metric-card.liquid .metric-value {
+    color: var(--color-primary);
+}
+.metric-card.investment .metric-value {
+    color: var(--color-investment);
 }
