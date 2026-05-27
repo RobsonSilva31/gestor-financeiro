@@ -12,6 +12,16 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWebEngineCore import QWebEngineDownloadRequest, QWebEngineProfile, QWebEnginePage, QWebEngineSettings
 
+import builtins
+def flushed_print(*args, **kwargs):
+    builtins.print(*args, **kwargs)
+    try:
+        sys.stdout.flush()
+        sys.stderr.flush()
+    except Exception:
+        pass
+builtins.print = flushed_print
+
 # Configurações Padrão
 DEFAULT_OWNER = "RobsonSilva31"
 DEFAULT_REPO = "gestor-financeiro"
@@ -106,6 +116,13 @@ def check_for_updates(persist_dir, persist_web, owner, repo):
         print(f"[Auto-Updater] Sem internet ou falha ao buscar atualizações: {e}")
     return False
 
+class DialogConsolePage(QWebEnginePage):
+    def __init__(self, profile, parent=None):
+        super().__init__(profile, parent)
+
+    def javaScriptConsoleMessage(self, level, message, lineNumber, sourceID):
+        print(f"[Dialog JS] {message} (Line: {lineNumber}, Source: {sourceID})")
+
 class Investidor10SyncDialog(QDialog):
     def __init__(self, profile, parent=None):
         super().__init__(parent)
@@ -162,10 +179,11 @@ class Investidor10SyncDialog(QDialog):
         layout.addLayout(top_bar)
         
         self.browser = QWebEngineView(self)
-        self.page_obj = QWebEnginePage(profile, self.browser)
+        self.page_obj = DialogConsolePage(profile, self.browser)
         self.browser.setPage(self.page_obj)
         
         self.page_obj.settings().setAttribute(QWebEngineSettings.LocalStorageEnabled, True)
+        self.browser.loadFinished.connect(self.on_load_finished)
         
         self.browser.setUrl(QUrl("https://investidor10.com.br/login/"))
         layout.addWidget(self.browser)
@@ -349,6 +367,9 @@ class Investidor10SyncDialog(QDialog):
         if msg_box.exec() == QMessageBox.StandardButton.Yes:
             self.accept()
 
+    def on_load_finished(self, ok):
+        print(f"[Dialog] Carregamento concluído: {ok}. URL atual: {self.browser.url().toString()}")
+
 class ConsolePage(QWebEnginePage):
     def __init__(self, profile, main_window):
         super().__init__(profile, main_window)
@@ -449,6 +470,7 @@ class MainWindow(QMainWindow):
         self.profile.setHttpCacheType(QWebEngineProfile.HttpCacheType.NoCache)
         self.profile.clearHttpCache()
         self.profile.settings().setAttribute(QWebEngineSettings.LocalStorageEnabled, True)
+        self.profile.setHttpUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
         
         # 3. Criar visualizador web
         self.browser = QWebEngineView()
