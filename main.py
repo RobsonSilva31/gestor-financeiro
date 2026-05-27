@@ -6,8 +6,8 @@ import json
 import zipfile
 import shutil
 import tempfile
-from PySide6.QtCore import QUrl, Slot
-from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox
+from PySide6.QtCore import QUrl, Slot, Qt
+from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox, QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QLabel
 from PySide6.QtGui import QIcon
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWebEngineCore import QWebEngineDownloadRequest, QWebEngineProfile, QWebEnginePage, QWebEngineSettings
@@ -106,6 +106,249 @@ def check_for_updates(persist_dir, persist_web, owner, repo):
         print(f"[Auto-Updater] Sem internet ou falha ao buscar atualizações: {e}")
     return False
 
+class Investidor10SyncDialog(QDialog):
+    def __init__(self, profile, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Sincronizar com Investidor10")
+        self.resize(1100, 800)
+        self.setMinimumSize(900, 650)
+        
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #0d1017;
+                color: #fff;
+            }
+            QLabel {
+                color: #e2e8f0;
+            }
+        """)
+        
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(12)
+        
+        top_bar = QHBoxLayout()
+        
+        info_label = QLabel(
+            "<b>Como Importar seus Investimentos:</b><br>"
+            "1. Faça login na sua conta do Investidor10 abaixo.<br>"
+            "2. Acesse sua <b>Carteira</b> (a página onde o gráfico de distribuição de ativos é exibido).<br>"
+            "3. Quando os valores de patrimônio aparecerem na tela, clique em <b>'Importar Carteira'</b>."
+        )
+        info_label.setStyleSheet("font-size: 13px; line-height: 1.4; color: #a0aec0;")
+        top_bar.addWidget(info_label, stretch=1)
+        
+        self.btn_import = QPushButton("Importar Carteira")
+        self.btn_import.setStyleSheet("""
+            QPushButton {
+                background-color: #10b981;
+                color: #0d1017;
+                font-weight: bold;
+                font-size: 14px;
+                padding: 12px 24px;
+                border: none;
+                border-radius: 6px;
+            }
+            QPushButton:hover {
+                background-color: #2cef87;
+            }
+            QPushButton:pressed {
+                background-color: #059669;
+            }
+        """)
+        self.btn_import.clicked.connect(self.import_data)
+        top_bar.addWidget(self.btn_import, alignment=Qt.AlignmentFlag.AlignVCenter)
+        
+        layout.addLayout(top_bar)
+        
+        self.browser = QWebEngineView(self)
+        self.page_obj = QWebEnginePage(profile, self.browser)
+        self.browser.setPage(self.page_obj)
+        
+        self.page_obj.settings().setAttribute(QWebEngineSettings.LocalStorageEnabled, True)
+        
+        self.browser.setUrl(QUrl("https://investidor10.com.br/login/"))
+        layout.addWidget(self.browser)
+        
+        self.imported_data = None
+
+    def import_data(self):
+        self.btn_import.setEnabled(False)
+        self.btn_import.setText("Verificando...")
+        
+        js_script = """
+        (function() {
+            const data = {};
+            const categories = {
+                'Ações (B3)': [/ações/i, /ações nacionais/i, /bovespa/i, /ações br/i],
+                'Fundos Imobiliários (FIIs)': [/fii/i, /fundos imobiliários/i, /fundos imobiliario/i, /fiis/i],
+                'Stock': [/stock/i, /ações internacionais/i, /ações estrangeiras/i, /stocks/i, /ações eua/i],
+                'ETF': [/etf/i, /etfs/i, /etf nacional/i, /etf internacional/i],
+                'Tesouro Direto': [/tesouro/i, /tesouro direto/i, /títulos públicos/i],
+                'Criptomoedas': [/cripto/i, /criptomoedas/i, /bitcoin/i, /criptoativos/i],
+                'CDB 100% CDI': [/cdb/i, /renda fixa/i, /poupança/i, /lc/i, /lci/i, /lca/i, /poupança/i, /tesouro selic/i]
+            };
+
+            function parseValue(text) {
+                if (!text) return null;
+                const cleaned = text.replace(/[^\\d.,]/g, '').trim();
+                if (!cleaned) return null;
+                if (cleaned.includes(',') && cleaned.includes('.')) {
+                    if (cleaned.indexOf(',') > cleaned.indexOf('.')) {
+                        return parseFloat(cleaned.replace(/\\./g, '').replace(',', '.'));
+                    } else {
+                        return parseFloat(cleaned.replace(/,/g, ''));
+                    }
+                }
+                if (cleaned.includes(',')) {
+                    const parts = cleaned.split(',');
+                    if (parts.length === 2 && parts[1].length <= 2) {
+                        return parseFloat(cleaned.replace(',', '.'));
+                    }
+                    return parseFloat(cleaned.replace(/,/g, ''));
+                }
+                return parseFloat(cleaned);
+            }
+
+            // Método 1: Extrair das instâncias do Chart.js
+            let foundInCharts = false;
+            try {
+                const canvases = document.querySelectorAll('canvas');
+                canvases.forEach(canvas => {
+                    for (let prop in canvas) {
+                        if (prop.toLowerCase().includes('chart') && canvas[prop] && canvas[prop].config) {
+                            const chart = canvas[prop];
+                            const labels = chart.data.labels;
+                            const datasets = chart.data.datasets;
+                            if (labels && datasets && datasets.length > 0) {
+                                const dataset = datasets[0];
+                                const values = dataset.data;
+                                if (labels.length === values.length) {
+                                    labels.forEach((label, idx) => {
+                                        const val = parseFloat(values[idx]);
+                                        if (!isNaN(val) && val > 0) {
+                                            for (const [key, regexes] of Object.entries(categories)) {
+                                                for (const regex of regexes) {
+                                                    if (regex.test(label)) {
+                                                        data[key] = val;
+                                                        foundInCharts = true;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (e) {
+                console.error(e);
+            }
+
+            // Método 2: Analisar todas as tabelas e linhas do DOM
+            const rows = document.querySelectorAll('tr, div.item, div.row, li, div.card, div.patrimonio-item');
+            rows.forEach(row => {
+                const text = (row.innerText || '').trim();
+                if (text.length > 0 && text.length < 300) {
+                    for (const [key, regexes] of Object.entries(categories)) {
+                        if (data[key] !== undefined) continue;
+                        for (const regex of regexes) {
+                            if (regex.test(text)) {
+                                const cells = row.querySelectorAll('td, span, div, p');
+                                for (let cell of cells) {
+                                    const cellText = (cell.innerText || '').trim();
+                                    if (cellText.includes('R$')) {
+                                        const val = parseValue(cellText);
+                                        if (val !== null && val > 0 && !cellText.includes('%')) {
+                                            data[key] = val;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Método 3: Tentar encontrar divs que contêm o nome da categoria seguido de um valor monetário
+            const elements = document.querySelectorAll('div, span, p');
+            elements.forEach(el => {
+                const text = (el.innerText || '').trim();
+                if (text.length > 0 && text.length < 150) {
+                    for (const [key, regexes] of Object.entries(categories)) {
+                        if (data[key] !== undefined) continue;
+                        for (const regex of regexes) {
+                            if (regex.test(text)) {
+                                const matches = text.match(/(?:R\\$|R\\$\\s*)\\s*([0-9.,]+)/i);
+                                if (matches) {
+                                    const val = parseValue(matches[0]);
+                                    if (val !== null && val > 0) {
+                                        data[key] = val;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            return data;
+        })()
+        """
+        self.browser.page().runJavaScript(js_script, self.process_scraped_data)
+
+    def process_scraped_data(self, result):
+        self.btn_import.setEnabled(True)
+        self.btn_import.setText("Importar Carteira")
+        
+        if not result or len(result) == 0:
+            QMessageBox.warning(
+                self,
+                "Importação Falhou",
+                "Nenhum valor de investimento foi detectado na página atual.\n\n"
+                "Instruções:\n"
+                "1. Faça login na sua conta do Investidor10.\n"
+                "2. Vá para a página da sua Carteira (Dashboard de Evolução/Patrimônio).\n"
+                "3. Aguarde o carregamento completo do gráfico e tabelas antes de tentar importar."
+            )
+            return
+            
+        msg = "<h3><b>Valores identificados no Investidor10:</b></h3><br>"
+        self.imported_data = {}
+        has_values = False
+        
+        for key, val in result.items():
+            if val and val > 0:
+                val_formatted = f"R$ {val:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+                msg += f"• <b>{key}:</b> {val_formatted}<br>"
+                self.imported_data[key] = val
+                has_values = True
+                
+        if not has_values:
+            QMessageBox.warning(
+                self,
+                "Nenhum valor encontrado",
+                "Não foram encontrados investimentos com valores acima de R$ 0,00 na página atual."
+            )
+            return
+            
+        msg += "<br><b>Deseja atualizar sua aba de Investimentos com esses valores?</b>"
+        
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle("Confirmar Importação")
+        msg_box.setTextFormat(Qt.TextFormat.RichText)
+        msg_box.setText(msg)
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        msg_box.setDefaultButton(QMessageBox.StandardButton.Yes)
+        
+        msg_box.button(QMessageBox.StandardButton.Yes).setText("Sim, Atualizar")
+        msg_box.button(QMessageBox.StandardButton.No).setText("Cancelar")
+        
+        if msg_box.exec() == QMessageBox.StandardButton.Yes:
+            self.accept()
+
 class ConsolePage(QWebEnginePage):
     def __init__(self, profile, main_window):
         super().__init__(profile, main_window)
@@ -118,6 +361,8 @@ class ConsolePage(QWebEnginePage):
             self.main_window.save_data_from_js(data_json)
         elif message.startswith("CHOOSE_PATH:"):
             self.main_window.choose_custom_path()
+        elif message.startswith("SYNC_INVESTIDOR10:"):
+            self.main_window.open_investidor10_sync()
         else:
             print(f"JS Console: {message} (Line: {lineNumber}, Source: {sourceID})")
 
@@ -368,6 +613,16 @@ class MainWindow(QMainWindow):
                 minified_data = "{}"
             escaped_data = minified_data.replace('\\', '\\\\').replace("'", "\\'")
             self.browser.page().runJavaScript(f"window.loadDataFromPython('{escaped_data}');")
+
+    # Abre a janela de sincronização com o Investidor10
+    def open_investidor10_sync(self):
+        print("[Core] Abrindo janela de sincronização do Investidor10...")
+        dialog = Investidor10SyncDialog(self.profile, self)
+        if dialog.exec() == QDialog.DialogCode.Accepted and dialog.imported_data:
+            import_json = json.dumps(dialog.imported_data)
+            escaped_import = import_json.replace('\\', '\\\\').replace("'", "\\'")
+            print(f"[Core] Importando dados de investimentos para o frontend: {import_json}")
+            self.browser.page().runJavaScript(f"window.importInvestmentsFromPython('{escaped_import}');")
 
 if __name__ == '__main__':
     # Evita que o Windows agrupe o app com o ícone genérico do Python na barra de tarefas

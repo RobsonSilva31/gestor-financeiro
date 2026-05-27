@@ -184,6 +184,14 @@ function setupEventListeners() {
         });
     }
 
+    // Botão Sincronizar Investidor10
+    const btnSyncInvestidor10 = document.getElementById("btn-sync-investidor10");
+    if (btnSyncInvestidor10) {
+        btnSyncInvestidor10.addEventListener("click", () => {
+            console.log("SYNC_INVESTIDOR10:");
+        });
+    }
+
     // Botão Alterar Caminho do Banco (Configurações)
     const btnChangePath = document.getElementById("btn-change-database-path");
     if (btnChangePath) {
@@ -887,6 +895,46 @@ window.loadDataFromPython = function(jsonDataString) {
     } catch (e) {
         console.error("Erro ao analisar dados carregados: " + e);
         showNotification("Erro de Carga", "Houve um problema ao carregar o arquivo financeiro.", "danger");
+    }
+};
+
+// Chamado pelo Python ao importar a carteira do Investidor10
+window.importInvestmentsFromPython = function(importedDataJsonString) {
+    try {
+        const imported = JSON.parse(importedDataJsonString);
+        let updatedCount = 0;
+        let addedCount = 0;
+        
+        if (!state.investments) state.investments = [];
+        
+        for (const [desc, val] of Object.entries(imported)) {
+            // Procura se já existe um investimento com essa descrição exata (sem case-sensitive)
+            let existing = state.investments.find(inv => inv.description.toLowerCase().trim() === desc.toLowerCase().trim());
+            if (existing) {
+                existing.value = val;
+                updatedCount++;
+            } else {
+                state.investments.push({
+                    id: "inv_" + Date.now() + Math.floor(Math.random() * 1000),
+                    description: desc,
+                    value: val
+                });
+                addedCount++;
+            }
+        }
+        
+        // Recalcular e renderizar tabelas
+        renderAllTables();
+        recalculateAll(true); // Salva de volta no Python
+        
+        showNotification(
+            "Importação Concluída", 
+            `Investimentos atualizados! (${updatedCount} atualizados, ${addedCount} novos)`, 
+            "success"
+        );
+    } catch (e) {
+        console.error("Erro ao importar investimentos: " + e);
+        showNotification("Erro na Importação", "Não foi possível mesclar os investimentos.", "danger");
     }
 };
 
