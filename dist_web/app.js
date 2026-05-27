@@ -635,7 +635,7 @@ function updateCharts(fixed, variable, unexpected, invested, leftover, income) {
         // Remove valores zerados para o gráfico ficar limpo
         const filteredLabels = [];
         const filteredData = [];
-        const colors = ['#ef4444', '#f59e0b', '#ec4899', '#3b82f6', '#10b981'];
+        const colors = ['#ff4d6d', '#ffd166', '#ec4899', '#00b4d8', '#00e699'];
         const filteredColors = [];
         
         dataValues.forEach((val, i) => {
@@ -704,7 +704,7 @@ function updateCharts(fixed, variable, unexpected, invested, leftover, income) {
                     labels: ['Receita Total', 'Gastos Totais', 'Investimentos'],
                     datasets: [{
                         data: [income, totalExp, invested],
-                        backgroundColor: ['#10b981', '#ef4444', '#3b82f6'],
+                        backgroundColor: ['#2cef87', '#ff4d6d', '#00b4d8'],
                         borderRadius: 6,
                         borderWidth: 0,
                         maxBarThickness: 45
