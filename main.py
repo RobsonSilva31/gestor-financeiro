@@ -382,9 +382,14 @@ class ConsolePage(QWebEnginePage):
             data_json = message[len("SAVE_DATA:"):]
             self.main_window.save_data_from_js(data_json)
         elif message.startswith("CHOOSE_PATH:"):
-            self.main_window.choose_custom_path()
+            from PySide6.QtCore import QTimer
+            QTimer.singleShot(0, self.main_window.choose_custom_path)
         elif message.startswith("SYNC_INVESTIDOR10:"):
-            self.main_window.open_investidor10_sync()
+            from PySide6.QtCore import QTimer
+            QTimer.singleShot(0, self.main_window.open_investidor10_sync)
+        elif message.startswith("UPDATE_INVESTIDOR10:"):
+            from PySide6.QtCore import QTimer
+            QTimer.singleShot(0, self.main_window.auto_update_investidor10)
         else:
             print(f"JS Console: {message} (Line: {lineNumber}, Source: {sourceID})")
 
@@ -546,6 +551,7 @@ class MainWindow(QMainWindow):
                         self.browser.page().runJavaScript(f"window.loadDataFromPython('{escaped_data}');")
                 except Exception as e:
                     print(f"[Core] Erro ao ler banco de dados e passar pro JS: {e}")
+
 
     # Salva dados financeiros recebidos do JS
     def save_data_from_js(self, data_json):
