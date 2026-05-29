@@ -263,13 +263,13 @@ class Investidor10SyncDialog(QDialog):
             
         import re
         categories = {
-            'Ações (B3)': [r'\baçõ[e|e]s\b', r'ações nacionais', r'bovespa', r'ações br'],
-            'Fundos Imobiliários (FIIs)': [r'\bfii\b', r'fundos imobiliários', r'fundos imobiliario', r'\bfiis\b'],
-            'Stock': [r'\bstock\b', r'ações internacionais', r'ações estrangeiras', r'\bstocks\b', r'ações eua'],
+            'Ações (B3)': [r'\baçõ[e|e]s\b', r'\baco[e|e]s\b', r'ações nacionais', r'acoes nacionais', r'bovespa', r'ações br', r'acoes br', r'\bacoes\b', r'\bacao\b'],
+            'Fundos Imobiliários (FIIs)': [r'\bfii\b', r'fundos imobiliários', r'fundos imobiliarios', r'fundos imobiliario', r'\bfiis\b'],
+            'Stock': [r'\bstock\b', r'ações internacionais', r'acoes internacionais', r'ações estrangeiras', r'acoes estrangeiras', r'\bstocks\b', r'ações eua', r'acoes eua'],
             'ETF': [r'\betf\b', r'\betfs\b', r'etfs intern', r'etf nacional', r'etf internacional'],
-            'Tesouro Direto': [r'tesouro', r'tesouro direto', r'títulos públicos'],
+            'Tesouro Direto': [r'tesouro', r'tesouro direto', r'títulos públicos', r'titulos publicos'],
             'Criptomoedas': [r'cripto', r'criptomoedas', r'bitcoin', r'criptoativos'],
-            'CDB 100% CDI': [r'renda fixa', r'cdb', r'poupança', r'\blc\b', r'\blci\b', r'\blca\b', r'tesouro selic']
+            'CDB 100% CDI': [r'renda fixa', r'cdb', r'poupança', r'poupanca', r'\blc\b', r'\blci\b', r'\blca\b', r'tesouro selic']
         }
         
         display_names = {
@@ -326,6 +326,13 @@ class Investidor10SyncDialog(QDialog):
                     return True
             return False
 
+        def matches_any_category(line_text):
+            for cat_name, regexes in categories.items():
+                for reg in regexes:
+                    if re.search(reg, line_text.lower()):
+                        return True
+            return False
+
         result = {}
         for i, line in enumerate(lines):
             line_lower = line.lower()
@@ -339,26 +346,30 @@ class Investidor10SyncDialog(QDialog):
                     found_val = None
                     found_assets = None
                     
-                    # Extract asset count (e.g. 13 ATIVOS) (outwards distance 0 to 2)
-                    for dist in range(0, 3):
-                        for step in [dist, -dist] if dist > 0 else [0]:
-                            j = i + step
-                            if 0 <= j < len(lines):
-                                search_line = lines[j]
-                                if found_assets is None:
-                                    asset_match = re.search(r'\b(\d+)\s+ativos?\b', search_line.lower())
-                                    if asset_match:
-                                        found_assets = int(asset_match.group(1))
+                    # Extract asset count (e.g. 13 ATIVOS) (forward search distance 0 to 5)
+                    for dist in range(0, 6):
+                        j = i + dist
+                        if 0 <= j < len(lines):
+                            if j > i and matches_any_category(lines[j]):
+                                break
+                            search_line = lines[j]
+                            if found_assets is None:
+                                asset_match = re.search(r'\b(\d+)\s+ativos?\b', search_line.lower())
+                                if asset_match:
+                                    found_assets = int(asset_match.group(1))
                                         
-                    # Pass 1: Search for value containing 'R$' (outwards distance 0 to 2)
-                    for dist in range(0, 3):
-                        for step in [dist, -dist] if dist > 0 else [0]:
-                            j = i + step
-                            if 0 <= j < len(lines):
-                                if is_percentage_line(j):
-                                    continue
-                                search_line = lines[j]
-                                if 'R$' in search_line:
+                    # Pass 1: Forward search for value containing 'R$' and keywords (distance 0 to 5)
+                    for dist in range(0, 6):
+                        j = i + dist
+                        if 0 <= j < len(lines):
+                            if j > i and matches_any_category(lines[j]):
+                                break
+                            if is_percentage_line(j):
+                                continue
+                            search_line = lines[j]
+                            if 'R$' in search_line:
+                                search_line_lower = search_line.lower()
+                                if any(keyword in search_line_lower for keyword in ['total', 'valor', 'aplicado', 'patrimônio', 'patrimonio', 'saldo', 'carteira']):
                                     # We match numbers that are NOT immediately followed by a %
                                     val_match = re.search(r'R\$\s*(\b\d{1,3}(?:\.\d{3})*(?:,\d{2})\b)', search_line)
                                     if not val_match:
@@ -371,21 +382,44 @@ class Investidor10SyncDialog(QDialog):
                         if found_val is not None:
                             break
                             
-                    # Pass 2: Fallback (any currency-like value not followed by %; distance 0 to 2)
+                    # Pass 2: Forward search for value containing 'R$' (distance 0 to 5)
                     if found_val is None:
-                        for dist in range(0, 3):
-                            for step in [dist, -dist] if dist > 0 else [0]:
-                                j = i + step
-                                if 0 <= j < len(lines):
-                                    if is_percentage_line(j):
-                                        continue
-                                    search_line = lines[j]
-                                    val_match = re.search(r'(\b\d{1,3}(?:\.\d{3})*(?:,\d{2})\b)(?!\s*%)', search_line)
+                        for dist in range(0, 6):
+                            j = i + dist
+                            if 0 <= j < len(lines):
+                                if j > i and matches_any_category(lines[j]):
+                                    break
+                                if is_percentage_line(j):
+                                    continue
+                                search_line = lines[j]
+                                if 'R$' in search_line:
+                                    val_match = re.search(r'R\$\s*(\b\d{1,3}(?:\.\d{3})*(?:,\d{2})\b)', search_line)
+                                    if not val_match:
+                                        val_match = re.search(r'(\b\d{1,3}(?:\.\d{3})*(?:,\d{2})\b)(?!\s*%)', search_line)
                                     if val_match:
                                         val = parse_val(val_match.group(1))
                                         if val and val > 0:
                                             found_val = val
                                             break
+                            if found_val is not None:
+                                break
+
+                    # Pass 3: General forward fallback (any currency-like value; distance 0 to 5)
+                    if found_val is None:
+                        for dist in range(0, 6):
+                            j = i + dist
+                            if 0 <= j < len(lines):
+                                if j > i and matches_any_category(lines[j]):
+                                    break
+                                if is_percentage_line(j):
+                                    continue
+                                search_line = lines[j]
+                                val_match = re.search(r'(\b\d{1,3}(?:\.\d{3})*(?:,\d{2})\b)(?!\s*%)', search_line)
+                                if val_match:
+                                    val = parse_val(val_match.group(1))
+                                    if val and val > 0:
+                                        found_val = val
+                                        break
                             if found_val is not None:
                                 break
                     
