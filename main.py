@@ -244,7 +244,7 @@ class Investidor10SyncDialog(QDialog):
         self.imported_data = None
 
     def open_default_browser(self):
-        QDesktopServices.openUrl(QUrl("https://investidor10.com.br/carteira/"))
+        QDesktopServices.openUrl(QUrl("https://investidor10.com.br/carteiras/"))
 
     def import_from_clipboard(self):
         clipboard_text = QApplication.clipboard().text()
@@ -266,10 +266,20 @@ class Investidor10SyncDialog(QDialog):
             'Ações (B3)': [r'\baçõ[e|e]s\b', r'ações nacionais', r'bovespa', r'ações br'],
             'Fundos Imobiliários (FIIs)': [r'\bfii\b', r'fundos imobiliários', r'fundos imobiliario', r'\bfiis\b'],
             'Stock': [r'\bstock\b', r'ações internacionais', r'ações estrangeiras', r'\bstocks\b', r'ações eua'],
-            'ETF': [r'\betf\b', r'\betfs\b', r'etf nacional', r'etf internacional'],
+            'ETF': [r'\betf\b', r'\betfs\b', r'etfs intern', r'etf nacional', r'etf internacional'],
             'Tesouro Direto': [r'tesouro', r'tesouro direto', r'títulos públicos'],
             'Criptomoedas': [r'cripto', r'criptomoedas', r'bitcoin', r'criptoativos'],
-            'CDB 100% CDI': [r'cdb', r'renda fixa', r'poupança', r'\blc\b', r'\blci\b', r'\blca\b', r'tesouro selic']
+            'CDB 100% CDI': [r'renda fixa', r'cdb', r'poupança', r'\blc\b', r'\blci\b', r'\blca\b', r'tesouro selic']
+        }
+        
+        display_names = {
+            'Ações (B3)': 'Ações',
+            'Fundos Imobiliários (FIIs)': 'Fundos Imobiliários (FIIs)',
+            'Stock': 'Stocks',
+            'ETF': 'ETFs',
+            'Tesouro Direto': 'Tesouro Direto',
+            'Criptomoedas': 'Criptomoedas',
+            'CDB 100% CDI': 'CDB 100% CDI'
         }
         
         lines = [line.strip() for line in clipboard_text.split('\n') if line.strip()]
@@ -294,8 +304,6 @@ class Investidor10SyncDialog(QDialog):
         for i, line in enumerate(lines):
             line_lower = line.lower()
             for cat_name, regexes in categories.items():
-                if cat_name in result:
-                    continue
                 matched = False
                 for reg in regexes:
                     if re.search(reg, line_lower):
@@ -303,21 +311,38 @@ class Investidor10SyncDialog(QDialog):
                         break
                 if matched:
                     found_val = None
+                    found_assets = None
+                    
                     for dist in range(0, 6):
                         for step in [dist, -dist] if dist > 0 else [0]:
                             j = i + step
                             if 0 <= j < len(lines):
                                 search_line = lines[j]
-                                if 'R$' in search_line or re.search(r'\b\d{1,3}(?:\.\d{3})*(?:,\d{2})\b', search_line):
-                                    if '%' not in search_line:
-                                        val = parse_val(search_line)
+                                
+                                # Tenta encontrar o número de ativos (ex: 13 ativos)
+                                if found_assets is None:
+                                    asset_match = re.search(r'\b(\d+)\s+ativos?\b', search_line.lower())
+                                    if asset_match:
+                                        found_assets = int(asset_match.group(1))
+                                
+                                # Tenta encontrar o valor monetário R$ na linha
+                                if found_val is None:
+                                    val_match = re.search(r'(?:R\$\s*)?(\b\d{1,3}(?:\.\d{3})*(?:,\d{2})\b)', search_line)
+                                    if val_match:
+                                        val = parse_val(val_match.group(1))
                                         if val and val > 0:
                                             found_val = val
-                                            break
-                        if found_val is not None:
+                                            
+                        if found_val is not None and found_assets is not None:
                             break
+                    
                     if found_val is not None:
-                        result[cat_name] = found_val
+                        disp_name = display_names.get(cat_name, cat_name)
+                        if found_assets is not None:
+                            label = f"{disp_name} ({found_assets} ativo{'s' if found_assets > 1 else ''})"
+                        else:
+                            label = disp_name
+                        result[label] = found_val
                         
         self.process_scraped_data(result)
 
@@ -795,7 +820,7 @@ class MainWindow(QMainWindow):
         self.bg_page.settings().setAttribute(QWebEngineSettings.AutoLoadImages, False)
         
         self.bg_browser.loadFinished.connect(self.on_bg_load_finished)
-        self.bg_browser.setUrl(QUrl("https://investidor10.com.br/carteira/"))
+        self.bg_browser.setUrl(QUrl("https://investidor10.com.br/carteiras/"))
 
     def on_bg_load_finished(self, ok):
         if not ok:
