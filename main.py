@@ -13,8 +13,9 @@ from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWebEngineCore import QWebEngineDownloadRequest, QWebEngineProfile, QWebEnginePage, QWebEngineSettings
 
 import builtins
+_original_print = builtins.print
 def flushed_print(*args, **kwargs):
-    builtins.print(*args, **kwargs)
+    _original_print(*args, **kwargs)
     try:
         sys.stdout.flush()
         sys.stderr.flush()
