@@ -917,9 +917,12 @@ window.importInvestmentsFromPython = function(importedDataJsonString) {
         if (!state.investments) state.investments = [];
         
         for (const [desc, val] of Object.entries(imported)) {
-            // Procura se já existe um investimento com essa descrição exata (sem case-sensitive)
-            let existing = state.investments.find(inv => inv.description.toLowerCase().trim() === desc.toLowerCase().trim());
+            // Procura se já existe um investimento com essa descrição (ignora variação no número de ativos)
+            const getBaseDescription = (d) => d.replace(/\s*\(\d+\s+ativos?\)/i, '').toLowerCase().trim();
+            const descBase = getBaseDescription(desc);
+            let existing = state.investments.find(inv => getBaseDescription(inv.description) === descBase);
             if (existing) {
+                existing.description = desc; // Atualiza a descrição com a nova quantidade de ativos
                 existing.value = val;
                 updatedCount++;
             } else {

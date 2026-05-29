@@ -1,13 +1,21 @@
 import re
 
 def test_parser():
+    # Test with simulated text containing percentages, active counts, and R$ values.
+    # We include duplicate category entries representing typical allocation tables at the top/bottom.
     simulated_text = """
-    AÇÕES 13 ATIVOS VALOR TOTAL: R$ 4.891,51
-    FIIS 12 ATIVOS VALOR TOTAL: R$ 4.751,54
-    ETFS INTERN. 1 ATIVOS VALOR TOTAL: R$ 1.329,66
-    STOCKS 10 ATIVOS VALOR TOTAL: R$ 4.646,28
-    TESOURO DIRETO 1 ATIVOS VALOR TOTAL: R$ 1.128,43
-    RENDA FIXA 1 ATIVOS VALOR TOTAL: R$ 5.324,18
+    AÇÕES
+    0,58
+    %
+    Fundos Imobiliários
+    4,40
+    %
+    AÇÕES 13 ATIVOS VALOR TOTAL: R$ 4.891,51 (0,58%)
+    FIIS 12 ATIVOS VALOR TOTAL: R$ 4.751,54 (4,40%)
+    ETFS INTERN. 1 ATIVOS VALOR TOTAL: R$ 1.329,66 (21,53%)
+    STOCKS 10 ATIVOS VALOR TOTAL: R$ 4.646,28 (6,02%)
+    TESOURO DIRETO 1 ATIVOS VALOR TOTAL: R$ 1.128,43 (21,05%)
+    RENDA FIXA 1 ATIVOS VALOR TOTAL: R$ 5.324,18 (5,11%)
     """
     
     categories = {
@@ -16,7 +24,7 @@ def test_parser():
         'Stock': [r'\bstock\b', r'ações internacionais', r'ações estrangeiras', r'\bstocks\b', r'ações eua'],
         'ETF': [r'\betf\b', r'\betfs\b', r'etfs intern', r'etf nacional', r'etf internacional'],
         'Tesouro Direto': [r'tesouro', r'tesouro direto', r'títulos públicos'],
-        'Renda Fixa': [r'renda fixa', r'cdb', r'poupança', r'\blc\b', r'\blci\b', r'\blca\b', r'tesouro selic']
+        'CDB 100% CDI': [r'renda fixa', r'cdb', r'poupança', r'\blc\b', r'\blci\b', r'\blca\b', r'tesouro selic']
     }
     
     display_names = {
@@ -25,7 +33,7 @@ def test_parser():
         'Stock': 'Stocks',
         'ETF': 'ETFs',
         'Tesouro Direto': 'Tesouro Direto',
-        'Renda Fixa': 'Renda Fixa'
+        'CDB 100% CDI': 'CDB 100% CDI'
     }
     
     lines = [line.strip() for line in simulated_text.split('\n') if line.strip()]
@@ -46,6 +54,32 @@ def test_parser():
             return float(cleaned.replace(',', ''))
         return float(cleaned)
 
+    def is_percentage_line(idx):
+        if idx < 0 or idx >= len(lines):
+            return False
+        curr = lines[idx]
+        # Se contiver R$, é uma linha de valor monetário real, mesmo que tenha percentual junto
+        if 'R$' in curr:
+            return False
+        curr_lower = curr.lower()
+        if '%' in curr:
+            return True
+        # Palavras que indicam percentual ou variação
+        for word in ['rentabilidade', 'variação', 'variacao', 'rentab', 'yield', 'desempenho', 'carteira %']:
+            if word in curr_lower:
+                return True
+        # Próxima linha é % ou indicador de percentual
+        if idx + 1 < len(lines):
+            nxt = lines[idx+1].strip()
+            if nxt.startswith('%') or nxt.lower() in ['%', 'rentabilidade', 'variação', 'variacao']:
+                return True
+        # Linha anterior termina com % ou é indicador de percentual
+        if idx - 1 >= 0:
+            prv = lines[idx-1].strip()
+            if prv.endswith('%') or prv.lower() in ['%', 'rentabilidade', 'variação', 'variacao']:
+                return True
+        return False
+
     result = {}
     for i, line in enumerate(lines):
         line_lower = line.lower()
@@ -59,28 +93,55 @@ def test_parser():
                 found_val = None
                 found_assets = None
                 
-                for dist in range(0, 6):
+                # Extract asset count (e.g. 13 ATIVOS)
+                for dist in range(0, 4):
                     for step in [dist, -dist] if dist > 0 else [0]:
                         j = i + step
                         if 0 <= j < len(lines):
                             search_line = lines[j]
-                            
-                            # Try to find asset count (e.g. 13 ATIVOS)
                             if found_assets is None:
                                 asset_match = re.search(r'\b(\d+)\s+ativos?\b', search_line.lower())
                                 if asset_match:
                                     found_assets = int(asset_match.group(1))
-                            
-                            # Try to find BRL value by matching the currency substring specifically
-                            if found_val is None:
-                                val_match = re.search(r'(?:R\$\s*)?(\b\d{1,3}(?:\.\d{3})*(?:,\d{2})\b)', search_line)
+                                    
+                # Pass 1: Search for value containing 'R$' (outwards distance 0 to 3)
+                for dist in range(0, 4):
+                    for step in [dist, -dist] if dist > 0 else [0]:
+                        j = i + step
+                        if 0 <= j < len(lines):
+                            if is_percentage_line(j):
+                                continue
+                            search_line = lines[j]
+                            if 'R$' in search_line:
+                                # We match numbers that are NOT immediately followed by a %
+                                val_match = re.search(r'R\$\s*(\b\d{1,3}(?:\.\d{3})*(?:,\d{2})\b)', search_line)
+                                if not val_match:
+                                    val_match = re.search(r'(\b\d{1,3}(?:\.\d{3})*(?:,\d{2})\b)(?!\s*%)', search_line)
                                 if val_match:
                                     val = parse_val(val_match.group(1))
                                     if val and val > 0:
                                         found_val = val
-                                    
-                    if found_val is not None and found_assets is not None:
+                                        break
+                    if found_val is not None:
                         break
+                        
+                # Pass 2: Fallback (any currency-like value not followed by %)
+                if found_val is None:
+                    for dist in range(0, 4):
+                        for step in [dist, -dist] if dist > 0 else [0]:
+                            j = i + step
+                            if 0 <= j < len(lines):
+                                if is_percentage_line(j):
+                                    continue
+                                search_line = lines[j]
+                                val_match = re.search(r'(\b\d{1,3}(?:\.\d{3})*(?:,\d{2})\b)(?!\s*%)', search_line)
+                                if val_match:
+                                    val = parse_val(val_match.group(1))
+                                    if val and val > 0:
+                                        found_val = val
+                                        break
+                        if found_val is not None:
+                            break
                 
                 if found_val is not None:
                     disp_name = display_names.get(cat_name, cat_name)
@@ -95,3 +156,4 @@ def test_parser():
         print(f"  {k}: {v}")
 
 test_parser()
+

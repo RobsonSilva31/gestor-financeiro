@@ -300,6 +300,32 @@ class Investidor10SyncDialog(QDialog):
                 return float(cleaned.replace(',', ''))
             return float(cleaned)
 
+        def is_percentage_line(idx):
+            if idx < 0 or idx >= len(lines):
+                return False
+            curr = lines[idx]
+            # Se contiver R$, é uma linha de valor monetário real, mesmo que tenha percentual junto
+            if 'R$' in curr:
+                return False
+            curr_lower = curr.lower()
+            if '%' in curr:
+                return True
+            # Palavras que indicam percentual ou variação
+            for word in ['rentabilidade', 'variação', 'variacao', 'rentab', 'yield', 'desempenho', 'carteira %']:
+                if word in curr_lower:
+                    return True
+            # Próxima linha é % ou indicador de percentual
+            if idx + 1 < len(lines):
+                nxt = lines[idx+1].strip()
+                if nxt.startswith('%') or nxt.lower() in ['%', 'rentabilidade', 'variação', 'variacao']:
+                    return True
+            # Linha anterior termina com % ou é indicador de percentual
+            if idx - 1 >= 0:
+                prv = lines[idx-1].strip()
+                if prv.endswith('%') or prv.lower() in ['%', 'rentabilidade', 'variação', 'variacao']:
+                    return True
+            return False
+
         result = {}
         for i, line in enumerate(lines):
             line_lower = line.lower()
@@ -313,28 +339,55 @@ class Investidor10SyncDialog(QDialog):
                     found_val = None
                     found_assets = None
                     
-                    for dist in range(0, 6):
+                    # Extract asset count (e.g. 13 ATIVOS) (outwards distance 0 to 2)
+                    for dist in range(0, 3):
                         for step in [dist, -dist] if dist > 0 else [0]:
                             j = i + step
                             if 0 <= j < len(lines):
                                 search_line = lines[j]
-                                
-                                # Tenta encontrar o número de ativos (ex: 13 ativos)
                                 if found_assets is None:
                                     asset_match = re.search(r'\b(\d+)\s+ativos?\b', search_line.lower())
                                     if asset_match:
                                         found_assets = int(asset_match.group(1))
-                                
-                                # Tenta encontrar o valor monetário R$ na linha
-                                if found_val is None:
-                                    val_match = re.search(r'(?:R\$\s*)?(\b\d{1,3}(?:\.\d{3})*(?:,\d{2})\b)', search_line)
+                                        
+                    # Pass 1: Search for value containing 'R$' (outwards distance 0 to 2)
+                    for dist in range(0, 3):
+                        for step in [dist, -dist] if dist > 0 else [0]:
+                            j = i + step
+                            if 0 <= j < len(lines):
+                                if is_percentage_line(j):
+                                    continue
+                                search_line = lines[j]
+                                if 'R$' in search_line:
+                                    # We match numbers that are NOT immediately followed by a %
+                                    val_match = re.search(r'R\$\s*(\b\d{1,3}(?:\.\d{3})*(?:,\d{2})\b)', search_line)
+                                    if not val_match:
+                                        val_match = re.search(r'(\b\d{1,3}(?:\.\d{3})*(?:,\d{2})\b)(?!\s*%)', search_line)
                                     if val_match:
                                         val = parse_val(val_match.group(1))
                                         if val and val > 0:
                                             found_val = val
-                                            
-                        if found_val is not None and found_assets is not None:
+                                            break
+                        if found_val is not None:
                             break
+                            
+                    # Pass 2: Fallback (any currency-like value not followed by %; distance 0 to 2)
+                    if found_val is None:
+                        for dist in range(0, 3):
+                            for step in [dist, -dist] if dist > 0 else [0]:
+                                j = i + step
+                                if 0 <= j < len(lines):
+                                    if is_percentage_line(j):
+                                        continue
+                                    search_line = lines[j]
+                                    val_match = re.search(r'(\b\d{1,3}(?:\.\d{3})*(?:,\d{2})\b)(?!\s*%)', search_line)
+                                    if val_match:
+                                        val = parse_val(val_match.group(1))
+                                        if val and val > 0:
+                                            found_val = val
+                                            break
+                            if found_val is not None:
+                                break
                     
                     if found_val is not None:
                         disp_name = display_names.get(cat_name, cat_name)
