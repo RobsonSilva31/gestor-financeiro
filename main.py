@@ -404,8 +404,8 @@ class Investidor10SyncDialog(QDialog):
                             if found_val is not None:
                                 break
 
-                    # Pass 3: General forward fallback (any currency-like value; distance 0 to 5)
-                    if found_val is None:
+                    # Pass 3: General forward fallback (only if we have asset count, to avoid allocation percentages)
+                    if found_val is None and found_assets is not None:
                         for dist in range(0, 6):
                             j = i + dist
                             if 0 <= j < len(lines):
